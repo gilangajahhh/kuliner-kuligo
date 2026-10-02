@@ -18,6 +18,7 @@
         <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><span>▦</span>Dashboard</a>
         <a class="{{ request()->routeIs('admin.pesanan') ? 'active' : '' }}" href="{{ route('admin.pesanan') }}"><span>▤</span>Pesanan</a>
         <a class="{{ request()->routeIs('admin.menu.*') ? 'active' : '' }}" href="{{ route('admin.menu.index') }}"><span>⚒</span>Kelola Menu</a>
+        <a class="{{ request()->routeIs('admin.meja.*') ? 'active' : '' }}" href="{{ route('admin.meja.index') }}"><span>▦</span>Meja &amp; QR</a>
         <a class="{{ request()->routeIs('admin.laporan') ? 'active' : '' }}" href="{{ route('admin.laporan') }}"><span>▥</span>Laporan Penjualan</a>
         <a class="{{ request()->routeIs('admin.staff.*') ? 'active' : '' }}" href="{{ route('admin.staff.index') }}"><span>♙</span>Kelola Akun Kasir</a>
     </nav>

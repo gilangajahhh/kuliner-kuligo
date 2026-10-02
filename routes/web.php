@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
+use App\Http\Controllers\Admin\MejaController as AdminMeja;
 use App\Http\Controllers\Kasir\PesananController as KasirPesanan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
@@ -49,6 +50,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
     Route::get('/pesanan', [AdminDashboard::class, 'index'])->name('pesanan');
     Route::resource('menu', MenuController::class)->except(['show']);
+    Route::get('/meja', [AdminMeja::class, 'index'])->name('meja.index');
+    Route::post('/meja', [AdminMeja::class, 'store'])->name('meja.store');
     Route::get('/kategori', [\App\Http\Controllers\Admin\KategoriController::class, 'index'])->name('kategori.index');
     Route::post('/kategori', [\App\Http\Controllers\Admin\KategoriController::class, 'store'])->name('kategori.store');
     Route::put('/kategori/{kategori}', [\App\Http\Controllers\Admin\KategoriController::class, 'update'])->name('kategori.update');

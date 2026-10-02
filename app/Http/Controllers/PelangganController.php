@@ -47,10 +47,11 @@ class PelangganController extends Controller
 
             $total = 0;
             foreach ($data['items'] as $item) {
-                $menu = \App\Models\Menu::findOrFail($item['id_menu']);
+                $menu = \App\Models\Menu::where('status_tersedia', true)->findOrFail($item['id_menu']);
                 $hargaTambahan = 0;
                 if (! empty($item['id_varian'])) {
-                    $hargaTambahan = \App\Models\VarianMenu::findOrFail($item['id_varian'])->harga_tambahan;
+                    $varian = \App\Models\VarianMenu::where('id_menu', $menu->id_menu)->findOrFail($item['id_varian']);
+                    $hargaTambahan = $varian->harga_tambahan;
                 }
                 $hargaSatuan = $menu->harga_dasar + $hargaTambahan;
                 $subtotal = $hargaSatuan * $item['jumlah'];
