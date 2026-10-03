@@ -70,6 +70,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 */
 Route::middleware(['auth', 'role:admin,kasir'])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/dashboard', [KasirPesanan::class, 'index'])->name('dashboard');
+    Route::get('/pesanan', [KasirPesanan::class, 'index'])->name('pesanan');
     Route::get('/pesanan/{pesanan}', [KasirPesanan::class, 'show'])->name('pesanan.show');
     Route::post('/pesanan/{pesanan}/verifikasi', [KasirPesanan::class, 'verifikasi'])->name('pesanan.verifikasi');
     Route::post('/pesanan/{pesanan}/status', [KasirPesanan::class, 'updateStatus'])->name('pesanan.status');

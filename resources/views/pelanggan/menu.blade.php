@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ asset('css/customer.css') }}">
 </head>
 <body class="customer-body" data-checkout="{{ route('menu.checkout', $meja->kode_qr) }}" data-payment="{{ route('menu.bayar', $meja->kode_qr) }}" data-status="{{ route('menu.status', [$meja->kode_qr, '__ORDER__']) }}">
-<header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark">k</span><span>kuligo<small>RESTO</small></span></a><div class="table-indicator"><span class="live-dot"></span> Meja {{ $meja->nomor_meja }}</div><button class="cart-trigger" type="button" onclick="document.querySelector('#cart').scrollIntoView({behavior:'smooth'})"><span>Keranjang</span><b id="header-count">0</b></button></header>
+<header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark"><img src="{{ asset('images/kuligo-food-mark.png') }}" alt=""></span><span>kuligo<small>RESTO</small></span></a><div class="table-indicator"><span class="live-dot"></span> Meja {{ $meja->nomor_meja }}</div><button class="cart-trigger" type="button" onclick="document.querySelector('#cart').scrollIntoView({behavior:'smooth'})"><span>Keranjang</span><b id="header-count">0</b></button></header>
 <main class="customer-main">
     <section class="welcome-row"><div><span class="eyebrow">SELAMAT DATANG DI KULIGO</span><h1>Temukan menu<br><em>favoritmu.</em></h1><p>Hidangan hangat dan minuman segar, dibuat dengan sepenuh hati.</p></div><div class="welcome-art" aria-hidden="true"><span>✦</span><div class="art-plate">🥘</div><i>BAIK · SEGAR · LEZAT</i></div></section>
     <section class="promo-banner"><div><span class="promo-kicker">KHUSUS HARI INI</span><h2>Waktunya makan enak.</h2><p>Pilih menu favoritmu, kami siapkan untukmu.</p></div><span class="promo-spark">✳</span></section>
@@ -17,8 +17,22 @@
         <nav class="category-tabs" aria-label="Kategori menu"><button class="category-tab active" data-category="all">Semua menu</button>@foreach($kategori as $item)<button class="category-tab" data-category="{{ $item->id_kategori }}">{{ $item->nama_kategori }}</button>@endforeach</nav>
         @forelse($kategori as $group)
             @if($group->menu->isNotEmpty())<section class="menu-group" data-group="{{ $group->id_kategori }}"><div class="group-heading"><h3>{{ $group->nama_kategori }}</h3><span>{{ $group->menu->count() }} pilihan</span></div><div class="menu-grid">
-                @foreach($group->menu as $item)<article class="menu-card" data-name="{{ strtolower($item->nama_menu.' '.$item->deskripsi) }}" data-category="{{ $group->id_kategori }}" data-id="{{ $item->id_menu }}" data-title="{{ $item->nama_menu }}" data-price="{{ $item->harga_dasar }}" data-image="{{ $item->url_gambar }}" data-variants="{{ $item->varian->map(fn($v) => ['id' => $v->id_varian, 'name' => $v->nama_varian, 'price' => $v->harga_tambahan])->toJson() }}">
-                    <div class="food-image">@if($item->url_gambar)<img src="{{ $item->url_gambar }}" alt="{{ $item->nama_menu }}" loading="lazy">@else<span>{{ str_contains(strtolower($group->nama_kategori), 'minum') ? '🥤' : '🍽️' }}</span>@endif</div>
+                @foreach($group->menu as $item)
+                    @php
+                        $namaMenu = mb_strtolower($item->nama_menu);
+                        $gambarMenu = $item->url_gambar;
+                        if (! $gambarMenu) {
+                            if (str_contains($namaMenu, 'kebuli')) {
+                                $gambarMenu = asset('images/menu/nasi-kebuli.webp');
+                            } elseif (str_contains($namaMenu, 'amer') || str_contains($namaMenu, 'kopi')) {
+                                $gambarMenu = asset('images/menu/kopi-es.webp');
+                            } elseif (str_contains($namaMenu, 'kentang') || str_contains($namaMenu, 'fries')) {
+                                $gambarMenu = asset('images/menu/kentang-goreng.webp');
+                            }
+                        }
+                    @endphp
+                <article class="menu-card" data-name="{{ strtolower($item->nama_menu.' '.$item->deskripsi) }}" data-category="{{ $group->id_kategori }}" data-id="{{ $item->id_menu }}" data-title="{{ $item->nama_menu }}" data-price="{{ $item->harga_dasar }}" data-image="{{ $gambarMenu }}" data-variants="{{ $item->varian->map(fn($v) => ['id' => $v->id_varian, 'name' => $v->nama_varian, 'price' => $v->harga_tambahan])->toJson() }}">
+                    <div class="food-image">@if($gambarMenu)<img src="{{ $gambarMenu }}" alt="{{ $item->nama_menu }}" loading="lazy">@else<span>{{ str_contains(strtolower($group->nama_kategori), 'minum') ? '🥤' : '🍽️' }}</span>@endif</div>
                     <div class="menu-card-copy"><div class="menu-title-line"><h4>{{ $item->nama_menu }}</h4><button class="add-button" type="button" aria-label="Tambah {{ $item->nama_menu }}">+</button></div><p>{{ $item->deskripsi ?: 'Disiapkan segar oleh dapur Kuligo.' }}</p><strong>Rp {{ number_format($item->harga_dasar, 0, ',', '.') }}</strong></div>
                 </article>@endforeach
             </div></section>@endif

@@ -21,3 +21,5 @@ body{background:#f5f7fb;color:#192235}
 .success-mark{background:#e9f8f0;color:#287d55}
 .timeline-step.done{color:#287d55}
 .timeline-step.done i{background:#192235;border-color:#192235}
+.customer-brand .brand-mark{background:transparent;border-radius:0}
+.customer-brand .brand-mark img{display:block;width:100%;height:100%;object-fit:contain}

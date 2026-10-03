@@ -12,7 +12,7 @@
 </head>
 <body class="admin-body">
 <aside class="sidebar">
-    <a class="brand" href="{{ route('admin.dashboard') }}"><span class="brand-mark">k</span><span><b>kuligo</b><small>RESTO POS</small></span></a>
+    <a class="brand" href="{{ route('admin.dashboard') }}"><span class="brand-mark"><img src="{{ asset('images/kuligo-food-mark.png') }}" alt=""></span><span><b>kuligo</b><small>RESTO POS</small></span></a>
     <div class="side-caption">MENU UTAMA</div>
     <nav class="side-nav">
         <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><span>▦</span>Dashboard</a>

@@ -22,15 +22,19 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        $request->merge(['username' => mb_strtolower(trim((string) $request->input('username')))]);
+
         $credentials = $request->validate([
             'role' => 'required|in:admin,kasir',
             'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('username', $credentials['username'])
-            ->where('status_aktif', true)
-            ->first();
+        $user = User::whereRaw('LOWER(username) = ?', [$credentials['username']])->first();
+
+        if ($user && ! $user->status_aktif) {
+            return back()->withErrors(['username' => 'Akun ini sedang nonaktif. Minta admin mengaktifkannya.'])->onlyInput('role', 'username');
+        }
 
         if (! $user || $user->role !== $credentials['role'] || ! Hash::check($credentials['password'], $user->password_hash)) {
             return back()->withErrors(['username' => 'Role, username, atau password tidak sesuai.'])->onlyInput('role', 'username');
