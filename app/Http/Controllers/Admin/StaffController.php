@@ -17,6 +17,8 @@ class StaffController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['username' => mb_strtolower(trim((string) $request->input('username')))]);
+
         $data = $request->validate([
             'nama' => 'required|string|max:150',
             'username' => 'required|string|max:50|unique:user,username',

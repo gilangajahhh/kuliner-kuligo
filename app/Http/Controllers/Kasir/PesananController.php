@@ -11,17 +11,45 @@ class PesananController extends Controller
 {
     public function index()
     {
-        $pesananBaru = Pesanan::with('meja', 'pembayaran')
+        $pesananBaru = Pesanan::with('meja', 'pembayaran', 'detail.menu')
             ->where('status_pesanan', 'baru')
             ->latest('waktu_pesan')
             ->get();
 
-        $pesananDiproses = Pesanan::with('meja')
-            ->whereIn('status_pesanan', ['diproses', 'siap_diantar'])
+        $pesananDiproses = Pesanan::with('meja', 'detail.menu')
+            ->where('status_pesanan', 'diproses')
             ->orderBy('waktu_pesan')
             ->get();
 
-        return view('kasir.dashboard', compact('pesananBaru', 'pesananDiproses'));
+        $pesananSiap = Pesanan::with('meja', 'detail.menu')
+            ->where('status_pesanan', 'siap_diantar')
+            ->orderBy('waktu_pesan')
+            ->get();
+
+        if (request()->routeIs('kasir.pesanan')) {
+            return view('kasir.pesanan', compact('pesananBaru', 'pesananDiproses', 'pesananSiap'));
+        }
+
+        $ringkasan = [
+            'pesanan_aktif' => Pesanan::whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->count(),
+            'pesanan_masuk' => $pesananBaru->count(),
+            'pesanan_selesai' => Pesanan::whereDate('waktu_pesan', today())->where('status_pesanan', 'selesai')->count(),
+            'pendapatan_hari_ini' => Pesanan::whereDate('waktu_pesan', today())->where('status_pesanan', '!=', 'batal')->sum('total_harga'),
+        ];
+        $pesananTerbaru = Pesanan::with('meja')->latest('waktu_pesan')->limit(7)->get();
+        $penjualanMingguan = Pesanan::whereDate('waktu_pesan', '>=', today()->subDays(6))
+            ->whereDate('waktu_pesan', '<=', today())
+            ->where('status_pesanan', '!=', 'batal')
+            ->get(['waktu_pesan', 'total_harga'])
+            ->groupBy(fn ($pesanan) => $pesanan->waktu_pesan->toDateString());
+        $grafikMingguan = collect(range(6, 0))->map(function ($hari) use ($penjualanMingguan) {
+            $tanggal = today()->subDays($hari);
+            $nilai = $penjualanMingguan->get($tanggal->toDateString(), collect())->sum('total_harga');
+
+            return ['label' => $tanggal->translatedFormat('D'), 'nilai' => $nilai];
+        });
+
+        return view('kasir.dashboard', compact('ringkasan', 'pesananTerbaru', 'grafikMingguan'));
     }
 
     public function show(Pesanan $pesanan)
