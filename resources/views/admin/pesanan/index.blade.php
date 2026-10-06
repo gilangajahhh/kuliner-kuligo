@@ -1,5 +1,66 @@
 @extends('layouts.admin')
 @section('title', 'Pesanan')
-@section('content')<div class="breadcrumb">OTO.KASIR / <b>DAFTAR PESANAN</b></div><div class="page-heading"><div><h1>Pesanan</h1><p>Pantau seluruh aktivitas pesanan yang masuk ke restoran.</p></div><span class="count-pill"><i class="online-dot"></i> {{ $pesananTerbaru->count() }} Pesanan terbaru</span></div>
-<section class="stats-grid"><article class="stat-card"><div class="stat-top"><span>Pesanan hari ini</span><span class="stat-icon violet">▤</span></div><strong>{{ $ringkasan['pesanan_hari_ini'] }}</strong><small>Transaksi tercatat hari ini</small></article><article class="stat-card"><div class="stat-top"><span>Pesanan aktif</span><span class="stat-icon amber">◷</span></div><strong>{{ $ringkasan['pesanan_aktif'] }}</strong><small>Menunggu proses atau pengantaran</small></article><article class="stat-card"><div class="stat-top"><span>Penjualan hari ini</span><span class="stat-icon green">↗</span></div><strong>Rp {{ number_format($ringkasan['penjualan_hari_ini'], 0, ',', '.') }}</strong><small>Total transaksi bukan batal</small></article><article class="stat-card"><div class="stat-top"><span>Status terminal</span><span class="stat-icon green">●</span></div><strong>Ready</strong><small>Sistem pesanan terhubung</small></article></section>
-<section class="panel recent-panel"><div class="panel-heading"><div><h2>Semua pesanan terbaru</h2><p>Pesanan masuk diurutkan dari waktu terbaru</p></div></div><div class="table-wrap"><table><thead><tr><th>No. Pesanan</th><th>Meja</th><th>Waktu pesan</th><th>Total</th><th>Status</th></tr></thead><tbody>@forelse($pesananTerbaru as $pesanan)<tr><td><b>#{{ $pesanan->no_pesanan }}</b></td><td>{{ $pesanan->meja->nomor_meja ?? '—' }}</td><td>{{ $pesanan->waktu_pesan?->format('d M Y, H:i') ?? '—' }}</td><td class="price">Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</td><td><span class="status {{ $pesanan->status_pesanan === 'batal' ? 'status-off' : 'status-ok' }}"><i></i>{{ ucfirst(str_replace('_', ' ', $pesanan->status_pesanan)) }}</span></td></tr>@empty<tr><td colspan="5"><div class="empty-state"><span>▤</span><b>Belum ada pesanan</b><small>Pesanan yang masuk akan muncul di halaman ini.</small></div></td></tr>@endforelse</tbody></table></div></section>@endsection
+@section('content')
+    <div class="breadcrumb">OTO.KASIR / <b>DAFTAR PESANAN</b></div>
+    <div class="page-heading">
+        <div>
+            <h1>Pesanan</h1>
+            <p>Pantau seluruh aktivitas pesanan yang masuk ke restoran.</p>
+        </div><span class="count-pill"><i class="online-dot"></i> {{ $pesananTerbaru->count() }} Pesanan terbaru</span>
+    </div>
+    <section class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-top"><span>Pesanan hari ini</span><span class="stat-icon violet">▤</span></div>
+            <strong>{{ $ringkasan['pesanan_hari_ini'] }}</strong><small>Transaksi tercatat hari ini</small>
+        </article>
+        <article class="stat-card">
+            <div class="stat-top"><span>Pesanan aktif</span><span class="stat-icon amber">◷</span></div>
+            <strong>{{ $ringkasan['pesanan_aktif'] }}</strong><small>Menunggu proses atau pengantaran</small>
+        </article>
+        <article class="stat-card">
+            <div class="stat-top"><span>Penjualan hari ini</span><span class="stat-icon green">↗</span></div><strong>Rp
+                {{ number_format($ringkasan['penjualan_hari_ini'], 0, ',', '.') }}</strong><small>Total transaksi bukan
+                batal</small>
+        </article>
+        <article class="stat-card">
+            <div class="stat-top"><span>Status terminal</span><span class="stat-icon green">●</span></div>
+            <strong>Ready</strong><small>Sistem pesanan terhubung</small>
+        </article>
+    </section>
+    <section class="panel recent-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Semua pesanan terbaru</h2>
+                <p>Pesanan masuk diurutkan dari waktu terbaru</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No. Pesanan</th>
+                        <th>Meja</th>
+                        <th>Waktu pesan</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>@forelse($pesananTerbaru as $pesanan)
+                    <tr>
+                        <td><b>#{{ $pesanan->no_pesanan }}</b></td>
+                        <td>{{ $pesanan->meja->nomor_meja ?? '—' }}</td>
+                        <td>{{ $pesanan->waktu_pesan?->format('d M Y, H:i') ?? '—' }}</td>
+                        <td class="price">Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</td>
+                        <td><span
+                                class="status {{ $pesanan->status_pesanan === 'batal' ? 'status-off' : 'status-ok' }}"><i></i>{{ ucfirst(str_replace('_', ' ', $pesanan->status_pesanan)) }}</span>
+                        </td>
+                </tr>@empty<tr>
+                        <td colspan="5">
+                            <div class="empty-state"><span>▤</span><b>Belum ada pesanan</b><small>Pesanan yang masuk akan
+                                    muncul di halaman ini.</small></div>
+                        </td>
+                    </tr>@endforelse
+                </tbody>
+            </table>
+        </div>
+</section>@endsection

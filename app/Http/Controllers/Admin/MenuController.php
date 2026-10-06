@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\FotoMenuRequest;
 use App\Models\KategoriMenu;
 use App\Models\Menu;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MenuController extends Controller
 {
@@ -22,7 +23,7 @@ class MenuController extends Controller
         return view('admin.menu.form', compact('kategori'));
     }
 
-    public function store(Request $request)
+    public function store(FotoMenuRequest $request)
     {
         $data = $request->validate([
             'id_kategori' => 'required|exists:kategori_menu,id_kategori',
@@ -36,6 +37,11 @@ class MenuController extends Controller
             'varian.*.nama_varian' => 'nullable|string|max:100',
             'varian.*.harga_tambahan' => 'nullable|numeric|min:0',
         ]);
+
+        if ($request->hasFile('gambar')) {
+            $path = $request->file('gambar')->store('menu', 'public');
+            $data['url_gambar'] = Storage::disk('public')->url($path);
+        }
 
         DB::transaction(function () use ($data) {
             $menu = Menu::create(collect($data)->except('varian')->all());
@@ -58,7 +64,7 @@ class MenuController extends Controller
         return view('admin.menu.form', compact('menu', 'kategori'));
     }
 
-    public function update(Request $request, Menu $menu)
+    public function update(FotoMenuRequest $request, Menu $menu)
     {
         $data = $request->validate([
             'id_kategori' => 'required|exists:kategori_menu,id_kategori',
@@ -72,6 +78,11 @@ class MenuController extends Controller
             'varian.*.nama_varian' => 'nullable|string|max:100',
             'varian.*.harga_tambahan' => 'nullable|numeric|min:0',
         ]);
+
+        if ($request->hasFile('gambar')) {
+            $path = $request->file('gambar')->store('menu', 'public');
+            $data['url_gambar'] = Storage::disk('public')->url($path);
+        }
 
         DB::transaction(function () use ($data, $menu) {
             $menu->update(collect($data)->except('varian')->all());
