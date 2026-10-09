@@ -44,8 +44,13 @@
                             <td><span
                                     class="status {{ $item->status_tersedia ? 'status-ok' : 'status-off' }}"><i></i>{{ $item->status_tersedia ? 'Tersedia' : 'Habis' }}</span>
                             </td>
-                            <td class="align-right"><a class="button button-light"
-                                    href="{{ route('admin.menu.edit', $item) }}">✎ Ubah</a></td>
+                            <td class="align-right"><div class="table-actions align-actions">
+                                <a class="button button-light" href="{{ route('admin.menu.edit', $item) }}">✎ Ubah</a>
+                                <form method="POST" action="{{ route('admin.menu.destroy', $item) }}" onsubmit="return confirm('Hapus menu ini? Menu yang sudah pernah dipesan akan ditolak agar riwayat transaksi tetap aman.');">
+                                    @csrf @method('DELETE')
+                                    <button class="button button-light" type="submit">Hapus</button>
+                                </form>
+                            </div></td>
                     </tr>@empty<tr>
                         <td colspan="6">
                             <div class="empty-state"><span>♨</span><b>Belum ada menu</b><small>Tambahkan menu pertama untuk

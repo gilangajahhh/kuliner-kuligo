@@ -10,7 +10,7 @@
         </div>
     </div>
     <form class="form-card" method="POST" enctype="multipart/form-data"
-        action="{{ isset($menu) ? route('admin.menu.update', $menu) : route('admin.menu.store') }}">@csrf @if(isset($menu))
+        action="{{ isset($menu) ? route('admin.menu.update', $menu) : route('admin.menu.store') }}">@csrf @foreach(old('varian_hapus', []) as $hapusVarian)<input type="hidden" name="varian_hapus[]" value="{{ $hapusVarian }}">@endforeach @if(isset($menu))
         @method('PUT') @endif
         <div class="form-grid"><label class="field">Nama menu<input name="nama_menu" required maxlength="150"
                     value="{{ old('nama_menu', $menu->nama_menu ?? '') }}"
@@ -36,8 +36,7 @@
                                 placeholder="Nama varian, contoh: Large"><input type="number" min="0"
                                 name="varian[{{ $i }}][harga_tambahan]"
                                 value="{{ old("varian.$i.harga_tambahan", data_get($varian, 'harga_tambahan', 0)) }}"
-                                placeholder="Tambahan harga">@unless(data_get($varian, 'id_varian'))<button
-                    class="remove-variant" type="button" aria-label="Hapus varian">×</button>@endunless</div>@empty
+                                placeholder="Tambahan harga"><button class="remove-variant" type="button" aria-label="Hapus varian">×</button></div>@empty
                                 <div class="variant-row"><input name="varian[0][nama_varian]"
                                         placeholder="Nama varian, contoh: Large"><input type="number" min="0"
                                         name="varian[0][harga_tambahan]" value="0" placeholder="Tambahan harga"><button
@@ -52,5 +51,5 @@
                 class="button button-dark" type="submit">{{ isset($menu) ? 'Simpan Perubahan' : 'Simpan Menu' }}</button>
         </div>
     </form>
-    <script>document.addEventListener('DOMContentLoaded', () => { const list = document.querySelector('#variant-list'); document.querySelector('#add-variant')?.addEventListener('click', () => { const i = list.querySelectorAll('.variant-row').length; const row = document.createElement('div'); row.className = 'variant-row'; row.innerHTML = `<input name="varian[${i}][nama_varian]" placeholder="Nama varian"><input type="number" min="0" name="varian[${i}][harga_tambahan]" value="0" placeholder="Tambahan harga"><button class="remove-variant" type="button" aria-label="Hapus varian">×</button>`; list.append(row) }); list?.addEventListener('click', e => { if (e.target.closest('.remove-variant')) e.target.closest('.variant-row').remove() }) });</script>
+    <script>document.addEventListener('DOMContentLoaded', () => { const list = document.querySelector('#variant-list'); const form = list?.closest('form'); document.querySelector('#add-variant')?.addEventListener('click', () => { const i = list.querySelectorAll('.variant-row').length; const row = document.createElement('div'); row.className = 'variant-row'; row.innerHTML = `<input name="varian[${i}][nama_varian]" placeholder="Nama varian"><input type="number" min="0" name="varian[${i}][harga_tambahan]" value="0" placeholder="Tambahan harga"><button class="remove-variant" type="button" aria-label="Hapus varian">×</button>`; list.append(row) }); list?.addEventListener('click', e => { const button = e.target.closest('.remove-variant'); if (!button) return; const row = button.closest('.variant-row'); const id = row.querySelector('input[name$="[id_varian]"]')?.value; if (id) { const input = document.createElement('input'); input.type = 'hidden'; input.name = 'varian_hapus[]'; input.value = id; form.append(input) } row.remove() }) });</script>
 @endsection

@@ -14,4 +14,5 @@ class Pesanan extends Model
     public function detail() { return $this->hasMany(DetailPesanan::class, 'id_pesanan', 'id_pesanan'); }
     public function pembayaran() { return $this->hasOne(Pembayaran::class, 'id_pesanan', 'id_pesanan'); }
     public function logStatus() { return $this->hasMany(LogStatusPesanan::class, 'id_pesanan', 'id_pesanan')->orderBy('waktu_update'); }
+    public function user() { return $this->belongsTo(User::class, 'id_user', 'id_user'); }
 }

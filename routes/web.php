@@ -52,6 +52,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('menu', MenuController::class)->except(['show']);
     Route::get('/meja', [AdminMeja::class, 'index'])->name('meja.index');
     Route::post('/meja', [AdminMeja::class, 'store'])->name('meja.store');
+    Route::put('/meja/{meja}', [AdminMeja::class, 'update'])->name('meja.update');
+    Route::delete('/meja/{meja}', [AdminMeja::class, 'destroy'])->name('meja.destroy');
     Route::get('/kategori', [\App\Http\Controllers\Admin\KategoriController::class, 'index'])->name('kategori.index');
     Route::post('/kategori', [\App\Http\Controllers\Admin\KategoriController::class, 'store'])->name('kategori.store');
     Route::put('/kategori/{kategori}', [\App\Http\Controllers\Admin\KategoriController::class, 'update'])->name('kategori.update');
@@ -71,7 +73,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:admin,kasir'])->prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/dashboard', [KasirPesanan::class, 'index'])->name('dashboard');
     Route::get('/pesanan', [KasirPesanan::class, 'index'])->name('pesanan');
+    Route::get('/transaksi', [KasirPesanan::class, 'transaksi'])->name('transaksi');
     Route::get('/pesanan/{pesanan}', [KasirPesanan::class, 'show'])->name('pesanan.show');
+    Route::get('/pesanan/{pesanan}/struk', [KasirPesanan::class, 'struk'])->name('pesanan.struk');
     Route::post('/pesanan/{pesanan}/verifikasi', [KasirPesanan::class, 'verifikasi'])->name('pesanan.verifikasi');
     Route::post('/pesanan/{pesanan}/status', [KasirPesanan::class, 'updateStatus'])->name('pesanan.status');
 });

@@ -1,12 +1,12 @@
 @extends('layouts.cashier')
-@section('title', 'Detail Pesanan')
+@section('title', 'Detail Transaksi')
 @section('content')
-    <div class="breadcrumb"><a href="{{ route('kasir.dashboard') }}">PESANAN</a> / <b>#{{ $pesanan->no_pesanan }}</b></div>
+    <div class="breadcrumb"><a href="{{ route('kasir.transaksi') }}">TRANSAKSI</a> / <b>#{{ $pesanan->no_pesanan }}</b></div>
     <div class="page-heading">
         <div>
-            <h1>Detail Pesanan</h1>
+            <h1>Detail Transaksi</h1>
             <p>Meja {{ $pesanan->meja->nomor_meja }} · {{ $pesanan->waktu_pesan?->format('d M Y, H:i') }}</p>
-        </div><a class="button button-light" href="{{ route('kasir.dashboard') }}">Kembali</a>
+        </div><div class="heading-actions"><a class="button button-light" href="{{ route('kasir.pesanan.struk', $pesanan) }}?cetak=1" target="_blank" rel="noopener">▤ Cetak Struk</a><a class="button button-light" href="{{ route('kasir.transaksi') }}">Kembali ke transaksi</a></div>
     </div>
     <section class="panel recent-panel">
         <div class="panel-heading">
@@ -47,13 +47,25 @@
     </section>
     <section class="summary-grid cashier-actions">
         <article class="summary-card">
-            <div class="summary-label">PEMBAYARAN</div><strong
-                class="summary-value">{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) : 'Belum ada' }}</strong><small>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }}
-                · Rp
-                {{ number_format($pesanan->pembayaran->jumlah_bayar ?? 0, 0, ',', '.') }}</small>@if($pesanan->status_pesanan === 'baru')
-                    <form method="POST" action="{{ route('kasir.pesanan.verifikasi', $pesanan) }}" class="action-form">@csrf<input
-                            type="hidden" name="valid" value="1"><button class="button button-dark">Verifikasi &amp; proses</button>
-                </form>@endif
+            <div class="summary-label">PEMBAYARAN</div>
+            <strong class="summary-value">{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) : 'Belum ada' }}</strong>
+            <small>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }} · Rp {{ number_format($pesanan->pembayaran->jumlah_bayar ?? 0, 0, ',', '.') }}</small>
+            @if($pesanan->pembayaran?->metode_pembayaran === 'tunai' && $pesanan->pembayaran->uang_diterima !== null)
+                <small>Uang diterima Rp {{ number_format($pesanan->pembayaran->uang_diterima, 0, ',', '.') }} · Kembalian Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</small>
+            @endif
+            @if($pesanan->status_pesanan === 'baru')
+                <form method="POST" action="{{ route('kasir.pesanan.verifikasi', $pesanan) }}" class="action-form cash-verification-form" id="cash-verification-form">
+                    @csrf
+                    <input type="hidden" name="valid" value="1">
+                    @if($pesanan->pembayaran?->metode_pembayaran === 'tunai')
+                        <label class="field cash-received-field">Uang diterima (Rp)
+                            <input id="cash-received" type="number" name="uang_diterima" min="{{ $pesanan->total_harga }}" step="1" required value="{{ old('uang_diterima') }}" data-total="{{ $pesanan->total_harga }}" placeholder="Masukkan uang dari pelanggan">
+                        </label>
+                        <div class="cash-change-preview"><span id="cash-change-label">Kembalian</span><strong id="cash-change-value">Masukkan nominal uang</strong></div>
+                    @endif
+                    <button class="button button-dark" type="submit">{{ $pesanan->pembayaran?->metode_pembayaran === 'tunai' ? 'Verifikasi & proses' : 'Verifikasi & proses' }}</button>
+                </form>
+            @endif
         </article>
         <article class="summary-card">
             <div class="summary-label">PERBARUI STATUS</div><strong
@@ -79,4 +91,33 @@
         · {{ $log->user->nama ?? 'Sistem' }}</small></div>@empty<p class="history-empty">Belum ada riwayat
                     status.</p>@endforelse
         </div>
-</section>@endsection
+</section>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.querySelector('#cash-received');
+    if (!input) return;
+    const total = Number(input.dataset.total || 0);
+    const label = document.querySelector('#cash-change-label');
+    const value = document.querySelector('#cash-change-value');
+    const button = document.querySelector('#cash-verification-form button[type="submit"]');
+    const formatRupiah = amount => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(amount);
+    const updateChange = () => {
+        const received = Number(input.value || 0);
+        const difference = received - total;
+        if (input.value === '') {
+            label.textContent = 'Kembalian';
+            value.textContent = 'Masukkan nominal uang';
+        } else if (difference < 0) {
+            label.textContent = 'Uang kurang';
+            value.textContent = `Rp ${formatRupiah(Math.abs(difference))}`;
+        } else {
+            label.textContent = 'Kembalian';
+            value.textContent = `Rp ${formatRupiah(difference)}`;
+        }
+        button.disabled = received < total;
+    };
+    input.addEventListener('input', updateChange);
+    updateChange();
+});
+</script>
+@endsection

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LogStatusPesanan;
 use App\Models\Pesanan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PesananController extends Controller
 {
@@ -54,8 +56,25 @@ class PesananController extends Controller
 
     public function show(Pesanan $pesanan)
     {
-        $pesanan->load('meja', 'detail.menu', 'detail.varian', 'pembayaran', 'logStatus.user');
+        $pesanan->load('meja', 'detail.menu', 'detail.varian', 'pembayaran', 'logStatus.user', 'user');
         return view('kasir.pesanan-detail', compact('pesanan'));
+    }
+
+    public function struk(Pesanan $pesanan)
+    {
+        $pesanan->load('meja', 'detail.menu', 'detail.varian', 'pembayaran', 'user');
+
+        return view('kasir.struk', compact('pesanan'));
+    }
+
+    public function transaksi()
+    {
+        $transaksi = Pesanan::with('meja', 'pembayaran')
+            ->whereHas('pembayaran')
+            ->latest('waktu_pesan')
+            ->paginate(15);
+
+        return view('kasir.transaksi', compact('transaksi'));
     }
 
     public function verifikasi(Request $request, Pesanan $pesanan)
@@ -63,6 +82,12 @@ class PesananController extends Controller
         $data = $request->validate([
             'valid' => 'required|boolean',
             'alasan_batal' => 'nullable|string|max:255',
+            'uang_diterima' => [
+                Rule::requiredIf(fn () => $request->boolean('valid') && $pesanan->pembayaran?->metode_pembayaran === 'tunai'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
         ]);
 
         if (! $data['valid']) {
@@ -71,9 +96,32 @@ class PesananController extends Controller
             return back()->with('success', 'Pesanan dibatalkan: ' . ($data['alasan_batal'] ?? '-'));
         }
 
-        $pesanan->pembayaran?->update(['status_pembayaran' => 'berhasil']);
-        $pesanan->update(['status_pesanan' => 'diproses', 'id_user' => auth()->id()]);
-        $this->catatLog($pesanan, 'diproses');
+        $uangDiterima = null;
+        $kembalian = null;
+
+        if ($pesanan->pembayaran?->metode_pembayaran === 'tunai') {
+            $uangDiterima = round((float) $data['uang_diterima'], 2);
+            $totalPesanan = round((float) $pesanan->total_harga, 2);
+
+            if ($uangDiterima < $totalPesanan) {
+                return back()->withErrors([
+                    'uang_diterima' => 'Uang yang diterima kurang Rp ' . number_format($totalPesanan - $uangDiterima, 0, ',', '.') . '.',
+                ])->withInput();
+            }
+
+            $kembalian = round($uangDiterima - $totalPesanan, 2);
+        }
+
+        DB::transaction(function () use ($pesanan, $uangDiterima, $kembalian) {
+            $pesanan->pembayaran?->update([
+                'status_pembayaran' => 'berhasil',
+                'waktu_pembayaran' => now(),
+                'uang_diterima' => $uangDiterima,
+                'kembalian' => $kembalian,
+            ]);
+            $pesanan->update(['status_pesanan' => 'diproses', 'id_user' => auth()->id()]);
+            $this->catatLog($pesanan, 'diproses');
+        });
 
         return back()->with('success', 'Pembayaran diverifikasi, pesanan diteruskan ke dapur.');
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FotoMenuRequest;
 use App\Models\KategoriMenu;
+use App\Models\DetailPesanan;
 use App\Models\Menu;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -44,7 +45,7 @@ class MenuController extends Controller
         }
 
         DB::transaction(function () use ($data) {
-            $menu = Menu::create(collect($data)->except('varian')->all());
+            $menu = Menu::create(collect($data)->except(['varian', 'varian_hapus'])->all());
             foreach ($data['varian'] ?? [] as $varian) {
                 if (filled($varian['nama_varian'] ?? null)) {
                     $menu->varian()->create([
@@ -77,6 +78,8 @@ class MenuController extends Controller
             'varian.*.id_varian' => 'nullable|integer',
             'varian.*.nama_varian' => 'nullable|string|max:100',
             'varian.*.harga_tambahan' => 'nullable|numeric|min:0',
+            'varian_hapus' => 'nullable|array',
+            'varian_hapus.*' => 'integer',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -85,7 +88,12 @@ class MenuController extends Controller
         }
 
         DB::transaction(function () use ($data, $menu) {
-            $menu->update(collect($data)->except('varian')->all());
+            $menu->update(collect($data)->except(['varian', 'varian_hapus'])->all());
+
+            if (! empty($data['varian_hapus'])) {
+                $menu->varian()->whereIn('id_varian', $data['varian_hapus'])->delete();
+            }
+
             foreach ($data['varian'] ?? [] as $varian) {
                 if (! filled($varian['nama_varian'] ?? null)) {
                     continue;
@@ -109,6 +117,10 @@ class MenuController extends Controller
 
     public function destroy(Menu $menu)
     {
+        if (DetailPesanan::where('id_menu', $menu->getKey())->exists()) {
+            return back()->withErrors(['menu' => 'Menu memiliki riwayat transaksi dan tidak dapat dihapus. Ubah statusnya menjadi habis jika tidak dijual lagi.']);
+        }
+
         $menu->delete();
         return redirect()->route('admin.menu.index')->with('success', 'Menu berhasil dihapus.');
     }

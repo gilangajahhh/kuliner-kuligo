@@ -20,7 +20,7 @@
         <a class="{{ request()->routeIs('admin.menu.*') ? 'active' : '' }}" href="{{ route('admin.menu.index') }}"><span>⚒</span>Kelola Menu</a>
         <a class="{{ request()->routeIs('admin.meja.*') ? 'active' : '' }}" href="{{ route('admin.meja.index') }}"><span>▦</span>Meja &amp; QR</a>
         <a class="{{ request()->routeIs('admin.laporan') ? 'active' : '' }}" href="{{ route('admin.laporan') }}"><span>▥</span>Laporan Penjualan</a>
-        <a class="{{ request()->routeIs('admin.staff.*') ? 'active' : '' }}" href="{{ route('admin.staff.index') }}"><span>♙</span>Kelola Akun Kasir</a>
+        <a class="{{ request()->routeIs('admin.staff.*') ? 'active' : '' }}" href="{{ route('admin.staff.index') }}"><span>♙</span>Kelola Akun</a>
     </nav>
     <div class="side-bottom"><div class="staff-chip"><span class="avatar">{{ strtoupper(substr(auth()->user()->nama ?? 'A', 0, 1)) }}</span><span><b>{{ auth()->user()->nama ?? 'Admin' }}</b><small>{{ ucfirst(auth()->user()->role ?? 'admin') }}</small></span></div>
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="logout" type="submit">↪ &nbsp;Keluar / Logout</button></form>

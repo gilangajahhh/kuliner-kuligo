@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Meja;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class MejaController extends Controller
@@ -35,5 +36,27 @@ class MejaController extends Controller
         ]);
 
         return redirect()->route('admin.meja.index')->with('success', 'Meja berhasil ditambahkan. QR siap dicetak.');
+    }
+
+    public function update(Request $request, Meja $meja)
+    {
+        $data = $request->validate([
+            'nomor_meja' => ['required', 'string', 'max:50', Rule::unique('meja', 'nomor_meja')->ignore($meja->getKey(), 'id_meja')],
+        ]);
+
+        $meja->update(['nomor_meja' => $data['nomor_meja']]);
+
+        return redirect()->route('admin.meja.index')->with('success', 'Nama meja berhasil diperbarui. Kode QR tetap sama.');
+    }
+
+    public function destroy(Meja $meja)
+    {
+        if ($meja->pesanan()->exists()) {
+            return back()->withErrors(['meja' => 'Meja sudah memiliki riwayat pesanan, jadi tidak dapat dihapus agar data transaksi tetap aman.']);
+        }
+
+        $meja->delete();
+
+        return redirect()->route('admin.meja.index')->with('success', 'Meja berhasil dihapus.');
     }
 }

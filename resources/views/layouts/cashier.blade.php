@@ -23,7 +23,9 @@
         <nav class="side-nav"><a class="{{ request()->routeIs('kasir.dashboard') ? 'active' : '' }}"
                 href="{{ route('kasir.dashboard') }}"><span>▦</span>Dashboard</a><a
                 class="{{ request()->routeIs('kasir.pesanan') || request()->routeIs('kasir.pesanan.*') ? 'active' : '' }}"
-                href="{{ route('kasir.pesanan') }}"><span>▤</span>Pesanan</a></nav>
+                href="{{ route('kasir.pesanan') }}"><span>▤</span>Pesanan</a><a
+                class="{{ request()->routeIs('kasir.transaksi') ? 'active' : '' }}"
+                href="{{ route('kasir.transaksi') }}"><span>▧</span>Transaksi</a></nav>
         <div class="side-bottom">
             <div class="staff-chip"><span
                     class="avatar">{{ strtoupper(substr(auth()->user()->nama, 0, 1)) }}</span><span><b>{{ auth()->user()->nama }}</b><small>Kasir</small></span>
