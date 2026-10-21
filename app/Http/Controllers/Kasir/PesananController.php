@@ -91,8 +91,20 @@ class PesananController extends Controller
         ]);
 
         if (! $data['valid']) {
-            $pesanan->update(['status_pesanan' => 'batal']);
-            $this->catatLog($pesanan, 'batal');
+            DB::transaction(function () use ($pesanan) {
+                $pesanan->newQuery()->whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
+                $pesanan->refresh();
+
+                if ($pesanan->status_pesanan !== 'batal') {
+                    foreach ($pesanan->detail as $detail) {
+                        $menu = \App\Models\Menu::whereKey($detail->id_menu)->lockForUpdate()->first();
+                        $menu?->increment('stok', $detail->jumlah);
+                    }
+
+                    $pesanan->update(['status_pesanan' => 'batal']);
+                    $this->catatLog($pesanan, 'batal');
+                }
+            });
             return back()->with('success', 'Pesanan dibatalkan: ' . ($data['alasan_batal'] ?? '-'));
         }
 
@@ -110,6 +122,9 @@ class PesananController extends Controller
             }
 
             $kembalian = round($uangDiterima - $totalPesanan, 2);
+        } elseif ($pesanan->pembayaran?->metode_pembayaran === 'e_wallet') {
+            // E-wallet payments are paid at the exact order total, so record zero change.
+            $kembalian = 0;
         }
 
         DB::transaction(function () use ($pesanan, $uangDiterima, $kembalian) {

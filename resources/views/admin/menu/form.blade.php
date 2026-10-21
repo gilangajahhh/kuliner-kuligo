@@ -23,7 +23,7 @@
                 class="field">Pilih foto menu <span class="optional">Opsional · maksimal 2 MB</span><input type="file"
                     name="gambar" accept="image/*">@error('gambar')<span
                     class="error-text">{{ $message }}</span>@enderror</label><label
-                class="field field-wide">Deskripsi<textarea name="deskripsi" rows="4"
+                class="field">Stok<input type="number" name="stok" min="0" step="1" required value="{{ old('stok', $menu->stok ?? 0) }}" placeholder="Contoh: 25"></label><label class="field field-wide">Deskripsi<textarea name="deskripsi" rows="4"
                     placeholder="Ceritakan menu Anda">{{ old('deskripsi', $menu->deskripsi ?? '') }}</textarea></label>
             <div class="field field-wide"><span>Varian menu <span class="optional">Opsional · tersimpan di tabel
                         varian_menu</span></span>

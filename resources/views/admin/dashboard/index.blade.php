@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Dashboard')
 @section('content')
-    <div class="breadcrumb">OTO.KASIR / <b>RINGKASAN HARI INI</b></div>
+    <div class="breadcrumb"><b>RINGKASAN HARI INI</b></div>
     <div class="page-heading">
         <div>
             <h1>Dashboard Utama</h1>

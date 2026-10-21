@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Pesanan')
 @section('content')
-    <div class="breadcrumb">OTO.KASIR / <b>DAFTAR PESANAN</b></div>
+    <div class="breadcrumb"><b>DAFTAR PESANAN</b></div>
     <div class="page-heading">
         <div>
             <h1>Pesanan</h1>

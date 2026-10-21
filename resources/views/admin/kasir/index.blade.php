@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Kelola Akun')
 @section('content')
-    <div class="breadcrumb">OTO.KASIR / <b>AKUN PENGGUNA</b></div>
+    <div class="breadcrumb"><b>AKUN PENGGUNA</b></div>
     <div class="page-heading">
         <div>
             <h1>Kelola Akun</h1>

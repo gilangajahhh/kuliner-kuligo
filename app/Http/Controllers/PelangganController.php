@@ -17,7 +17,7 @@ class PelangganController extends Controller
     {
         $meja = Meja::where('kode_qr', $kode_qr)->firstOrFail();
         $kategori = KategoriMenu::with(['menu' => function ($q) {
-            $q->where('status_tersedia', true)->with('varian');
+            $q->where('status_tersedia', true)->where('stok', '>', 0)->with('varian');
         }])->orderBy('urutan_tampil')->get();
 
         return view('pelanggan.menu', compact('meja', 'kategori'));
@@ -47,7 +47,12 @@ class PelangganController extends Controller
 
             $total = 0;
             foreach ($data['items'] as $item) {
-                $menu = \App\Models\Menu::where('status_tersedia', true)->findOrFail($item['id_menu']);
+                $menu = \App\Models\Menu::where('status_tersedia', true)->whereKey($item['id_menu'])->lockForUpdate()->firstOrFail();
+                if ($item['jumlah'] > $menu->stok) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'items' => "Stok {$menu->nama_menu} tersisa {$menu->stok}, sedangkan jumlah pesanan {$item['jumlah']}.",
+                    ]);
+                }
                 $hargaTambahan = 0;
                 if (! empty($item['id_varian'])) {
                     $varian = \App\Models\VarianMenu::where('id_menu', $menu->id_menu)->findOrFail($item['id_varian']);
@@ -66,6 +71,7 @@ class PelangganController extends Controller
                     'harga_satuan' => $hargaSatuan,
                     'subtotal' => $subtotal,
                 ]);
+                $menu->decrement('stok', $item['jumlah']);
             }
 
             $pesanan->update(['total_harga' => $total]);
@@ -84,7 +90,7 @@ class PelangganController extends Controller
     {
         $data = $request->validate([
             'no_pesanan' => 'required|exists:pesanan,no_pesanan',
-            'metode_pembayaran' => 'required|in:qris,e_wallet,tunai,kartu_kredit',
+            'metode_pembayaran' => 'required|in:qris,e_wallet,tunai,',
         ]);
 
         $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])->firstOrFail();

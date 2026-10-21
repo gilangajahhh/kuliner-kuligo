@@ -6,7 +6,7 @@
         <div>
             <h1>Detail Transaksi</h1>
             <p>Meja {{ $pesanan->meja->nomor_meja }} · {{ $pesanan->waktu_pesan?->format('d M Y, H:i') }}</p>
-        </div><div class="heading-actions"><a class="button button-light" href="{{ route('kasir.pesanan.struk', $pesanan) }}?cetak=1" target="_blank" rel="noopener">▤ Cetak Struk</a><a class="button button-light" href="{{ route('kasir.transaksi') }}">Kembali ke transaksi</a></div>
+        </div><div class="heading-actions"><a class="button button-light" href="{{ route('kasir.pesanan.struk', $pesanan) }}?cetak=1" target="_blank" rel="noopener">▤ Cetak / Simpan PDF</a><a class="button button-light" href="{{ route('kasir.transaksi') }}">Kembali ke transaksi</a></div>
     </div>
     <section class="panel recent-panel">
         <div class="panel-heading">
@@ -52,6 +52,8 @@
             <small>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }} · Rp {{ number_format($pesanan->pembayaran->jumlah_bayar ?? 0, 0, ',', '.') }}</small>
             @if($pesanan->pembayaran?->metode_pembayaran === 'tunai' && $pesanan->pembayaran->uang_diterima !== null)
                 <small>Uang diterima Rp {{ number_format($pesanan->pembayaran->uang_diterima, 0, ',', '.') }} · Kembalian Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</small>
+            @elseif($pesanan->pembayaran?->metode_pembayaran === 'e_wallet' && $pesanan->pembayaran->kembalian !== null)
+                <small>Kembalian Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</small>
             @endif
             @if($pesanan->status_pesanan === 'baru')
                 <form method="POST" action="{{ route('kasir.pesanan.verifikasi', $pesanan) }}" class="action-form cash-verification-form" id="cash-verification-form">

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Kelola Meja & QR')
 @section('content')
-    <div class="breadcrumb">OTO.KASIR / <b>MEJA &amp; QR</b></div>
+    <div class="breadcrumb"><b>MEJA &amp; QR</b></div>
     <div class="page-heading">
         <div>
             <h1>Kelola Meja &amp; QR</h1>

@@ -21,7 +21,7 @@
 </head>
 <body>
     <div class="no-print">
-        <button type="button" onclick="window.print()">Cetak struk</button>
+        <button type="button" onclick="window.print()">Cetak / Simpan PDF</button>
         <a href="{{ route('kasir.pesanan.show', $pesanan) }}">Kembali ke pesanan</a>
     </div>
     <main class="receipt">
@@ -59,6 +59,8 @@
             @endif
             @if($pesanan->pembayaran?->metode_pembayaran === 'tunai' && $pesanan->pembayaran->uang_diterima !== null)
                 <div><span>Uang diterima</span><b>Rp {{ number_format($pesanan->pembayaran->uang_diterima, 0, ',', '.') }}</b></div>
+                <div><span>Kembalian</span><b>Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</b></div>
+            @elseif($pesanan->pembayaran?->metode_pembayaran === 'e_wallet' && $pesanan->pembayaran->kembalian !== null)
                 <div><span>Kembalian</span><b>Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</b></div>
             @endif
             <div><span>Kasir</span><b>{{ $pesanan->user->nama ?? auth()->user()->nama }}</b></div>
