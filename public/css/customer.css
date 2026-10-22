@@ -23,3 +23,7 @@ body{background:#f5f7fb;color:#192235}
 .timeline-step.done i{background:#192235;border-color:#192235}
 .customer-brand .brand-mark{background:transparent;border-radius:0}
 .customer-brand .brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+/* Keep menu price and stock status visually distinct. */
+.menu-card-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.menu-card-meta strong{white-space:nowrap}
+.menu-card-meta small{color:var(--muted);font-size:11px;white-space:nowrap}
