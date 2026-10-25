@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Meja Kuligo - Demo</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; color: #17211b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px; background: #f4f6f3; }
+    header { max-width: 900px; margin: 0 auto 24px; text-align: center; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    p { margin: 6px 0; color: #526057; }
+    .grid { max-width: 900px; margin: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .card { background: #fff; border: 1px solid #dce4dd; border-radius: 16px; padding: 20px; text-align: center; break-inside: avoid; }
+    .card img { display: block; width: min(100%, 300px); aspect-ratio: 1; margin: 0 auto 12px; image-rendering: pixelated; }
+    .card h2 { margin: 0 0 8px; font-size: 22px; }
+    .card a { display: block; color: #2b6844; font-size: 12px; overflow-wrap: anywhere; }
+    .note { max-width: 900px; margin: 24px auto 0; font-size: 13px; }
+    .print { display: block; margin: 0 auto 20px; border: 0; border-radius: 8px; padding: 11px 18px; background: #1c3528; color: white; font-size: 15px; cursor: pointer; }
+    @media (max-width: 600px) { body { padding: 16px; } .grid { grid-template-columns: 1fr; } }
+    @media print { body { padding: 8mm; background: white; } .print { display: none; } .grid { gap: 8mm; } .card { border: 1px solid #aaa; border-radius: 0; padding: 6mm; } .card img { width: 65mm; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>QR Code Meja Kuligo</h1>
+    <p>Demo Cloudflare Tunnel</p>
+  </header>
+  <button class="print" type="button" onclick="window.print()">Cetak QR meja</button>
+  <main class="grid" id="qr-grid"></main>
+  <p class="note">QR ini memakai alamat Quick Tunnel sementara. Jika tunnel dimulai ulang dan alamat berubah, QR perlu dibuat ulang. Pastikan Meja 01–04 sudah terdaftar di database aplikasi.</p>
+  <script>
+    const baseUrl = 'https://sail-excellence-maps-tremendous.trycloudflare.com';
+    const tables = ['meja-01', 'meja-02', 'meja-03', 'meja-04'];
+    const grid = document.querySelector('#qr-grid');
+    for (const code of tables) {
+      const url = `${baseUrl}/menu/${code}`;
+      const card = document.createElement('section');
+      card.className = 'card';
+      const image = document.createElement('img');
+      image.alt = `QR Code ${code.replace('-', ' ')}`;
+      image.src = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=12&data=${encodeURIComponent(url)}`;
+      const title = document.createElement('h2');
+      title.textContent = code.replace('-', ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+      const link = document.createElement('a');
+      link.href = url;
+      link.textContent = url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      card.append(image, title, link);
+      grid.append(card);
+    }
+  </script>
+</body>
+</html>

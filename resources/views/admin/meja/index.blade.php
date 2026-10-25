@@ -34,18 +34,25 @@
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>Meja</th><th>Kode QR</th><th>Riwayat pesanan</th><th>Tautan menu</th><th>QR</th><th>Aksi</th></tr>
+                    <tr><th>Meja</th><th>Status</th><th>Kode QR</th><th>Riwayat pesanan</th><th>Tautan menu</th><th>QR</th><th>Aksi</th></tr>
                 </thead>
                 <tbody>
                     @forelse($meja as $item)
                         <tr>
                             <td><b>{{ $item->nomor_meja }}</b></td>
+                            <td><span class="category-tag">{{ ucfirst($item->status_meja) }}</span></td>
                             <td><span class="category-tag">{{ $item->kode_qr }}</span></td>
                             <td>{{ $item->pesanan_count }} pesanan</td>
                             <td><a href="{{ route('menu.index', $item->kode_qr) }}" target="_blank" rel="noopener">Buka menu</a></td>
                             <td><a class="button button-light" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&amp;data={{ urlencode(route('menu.index', $item->kode_qr)) }}" target="_blank" rel="noopener">Buka / cetak</a></td>
                             <td>
                                 <div class="table-actions">
+                                    @if($item->status_meja === 'terisi')
+                                        <form method="POST" action="{{ route('admin.meja.kosongkan', $item) }}" onsubmit="return confirm('Kosongkan meja {{ $item->nomor_meja }}?');">
+                                            @csrf @method('PATCH')
+                                            <button class="button button-dark" type="submit">Kosongkan meja</button>
+                                        </form>
+                                    @endif
                                     <details class="crud-details">
                                         <summary class="button button-light">✎ Ubah</summary>
                                         <form class="crud-edit-form" method="POST" action="{{ route('admin.meja.update', $item) }}">
@@ -67,7 +74,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><div class="empty-state"><span>▦</span><b>Belum ada meja</b><small>Tambahkan meja di atas untuk membuat tautan dan QR pelanggan.</small></div></td></tr>
+                        <tr><td colspan="7"><div class="empty-state"><span>▦</span><b>Belum ada meja</b><small>Tambahkan meja di atas untuk membuat tautan dan QR pelanggan.</small></div></td></tr>
                     @endforelse
                 </tbody>
             </table>

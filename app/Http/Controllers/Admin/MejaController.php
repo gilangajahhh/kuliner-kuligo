@@ -49,6 +49,13 @@ class MejaController extends Controller
         return redirect()->route('admin.meja.index')->with('success', 'Nama meja berhasil diperbarui. Kode QR tetap sama.');
     }
 
+    public function kosongkan(Meja $meja)
+    {
+        $meja->update(['status_meja' => 'kosong']);
+
+        return redirect()->route('admin.meja.index')->with('success', 'Meja ' . $meja->nomor_meja . ' berhasil dikosongkan.');
+    }
+
     public function destroy(Meja $meja)
     {
         if ($meja->pesanan()->exists()) {

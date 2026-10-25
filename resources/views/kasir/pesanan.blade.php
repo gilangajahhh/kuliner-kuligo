@@ -17,6 +17,30 @@
             href="{{ route('kasir.dashboard') }}" class="button button-light">Ringkasan dashboard</a>
     </div>
 
+    <section class="panel recent-panel" style="margin-bottom:24px">
+        <div class="panel-heading">
+            <div><h2>Status meja</h2><p>Status diperbarui otomatis setiap 5 detik.</p></div>
+            <span class="count-pill"><i class="queue-live-dot"></i> Langsung</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Meja</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody id="cashier-table-status">
+                    @forelse($meja as $table)
+                        <tr data-table-id="{{ $table->id_meja }}">
+                            <td><b>{{ $table->nomor_meja }}</b></td>
+                            <td><span class="queue-status {{ $table->status_meja === 'kosong' ? 'done' : '' }}">{{ ucfirst($table->status_meja) }}</span></td>
+                            <td>@if($table->status_meja === 'terisi')<button class="button button-light clear-table" type="button" data-url="{{ route('kasir.meja.kosongkan', $table) }}">Kosongkan meja</button>@else<span>Siap digunakan</span>@endif</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="3">Belum ada meja.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <small id="table-action-message" role="status" aria-live="polite"></small>
+    </section>
+
     <div class="order-board">
         <section class="board-column" id="masuk">
             <header class="board-column-head"><span class="board-dot incoming"></span>
@@ -117,4 +141,38 @@
     </div>
     <div class="board-note"><span class="online-dot"></span> Status pesanan menggunakan data terbaru dari transaksi
         pelanggan <a href="{{ route('kasir.dashboard') }}">Kembali ke dashboard →</a></div>
+    <script>
+        (() => {
+            const body = document.querySelector('#cashier-table-status');
+            const message = document.querySelector('#table-action-message');
+            const statusUrl = @json(route('kasir.meja.status'));
+            const clearUrl = @json(url('/kasir/meja'));
+            const csrf = @json(csrf_token());
+            const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
+            async function refreshTables() {
+                try {
+                    const response = await fetch(statusUrl, {headers: {'Accept': 'application/json'}});
+                    if (!response.ok) return;
+                    const tables = await response.json();
+                    body.innerHTML = tables.length ? tables.map(table => `<tr data-table-id="${table.id_meja}"><td><b>${escapeHtml(table.nomor_meja)}</b></td><td><span class="queue-status ${table.status_meja === 'kosong' ? 'done' : ''}">${escapeHtml(table.status_meja.charAt(0).toUpperCase() + table.status_meja.slice(1))}</span></td><td>${table.status_meja === 'terisi' ? `<button class="button button-light clear-table" type="button" data-url="${clearUrl}/${table.id_meja}/kosongkan">Kosongkan meja</button>` : 'Siap digunakan'}</td></tr>`).join('') : '<tr><td colspan="3">Belum ada meja.</td></tr>';
+                } catch (_) {}
+            }
+            body.addEventListener('click', async event => {
+                const button = event.target.closest('.clear-table');
+                if (!button) return;
+                button.disabled = true;
+                try {
+                    const response = await fetch(button.dataset.url, {method: 'PATCH', headers: {'Accept':'application/json', 'X-CSRF-TOKEN':csrf}});
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Status meja gagal diperbarui.');
+                    message.textContent = result.message;
+                    await refreshTables();
+                } catch (error) {
+                    message.textContent = error.message;
+                    button.disabled = false;
+                }
+            });
+            window.setInterval(refreshTables, 5000);
+        })();
+    </script>
 @endsection

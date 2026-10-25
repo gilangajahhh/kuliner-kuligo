@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use App\Models\LogStatusPesanan;
+use App\Models\Meja;
 use App\Models\Pesanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ class PesananController extends Controller
 {
     public function index()
     {
+        $meja = Meja::orderBy('nomor_meja')->get(['id_meja', 'nomor_meja', 'status_meja']);
         $pesananBaru = Pesanan::with('meja', 'pembayaran', 'detail.menu')
             ->where('status_pesanan', 'baru')
             ->latest('waktu_pesan')
@@ -29,7 +31,7 @@ class PesananController extends Controller
             ->get();
 
         if (request()->routeIs('kasir.pesanan')) {
-            return view('kasir.pesanan', compact('pesananBaru', 'pesananDiproses', 'pesananSiap'));
+            return view('kasir.pesanan', compact('meja', 'pesananBaru', 'pesananDiproses', 'pesananSiap'));
         }
 
         $ringkasan = [
@@ -75,6 +77,18 @@ class PesananController extends Controller
             ->paginate(15);
 
         return view('kasir.transaksi', compact('transaksi'));
+    }
+
+    public function statusMeja()
+    {
+        return response()->json(Meja::orderBy('nomor_meja')->get(['id_meja', 'nomor_meja', 'status_meja']));
+    }
+
+    public function kosongkanMeja(Meja $meja)
+    {
+        $meja->update(['status_meja' => 'kosong']);
+
+        return response()->json(['message' => 'Meja ' . $meja->nomor_meja . ' berhasil dikosongkan.']);
     }
 
     public function verifikasi(Request $request, Pesanan $pesanan)

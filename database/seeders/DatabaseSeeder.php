@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\KategoriMenu;
+use App\Models\Meja;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        foreach (range(1, 4) as $nomor) {
+            $namaMeja = 'Meja ' . str_pad((string) $nomor, 2, '0', STR_PAD_LEFT);
+            Meja::firstOrCreate(
+                ['nomor_meja' => $namaMeja],
+                [
+                    'kode_qr' => 'meja-' . str_pad((string) $nomor, 2, '0', STR_PAD_LEFT),
+                    'status_meja' => 'kosong',
+                ]
+            );
+        }
+
         KategoriMenu::firstOrCreate(['nama_kategori' => 'Makanan'], ['urutan_tampil' => 1]);
         KategoriMenu::firstOrCreate(['nama_kategori' => 'Minuman'], ['urutan_tampil' => 2]);
 

@@ -37,6 +37,7 @@ class PelangganController extends Controller
         ]);
 
         $pesanan = DB::transaction(function () use ($data, $meja) {
+            $meja = Meja::whereKey($meja->getKey())->lockForUpdate()->firstOrFail();
             $pesanan = Pesanan::create([
                 'id_meja' => $meja->id_meja,
                 'no_pesanan' => 'ORD-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
@@ -75,6 +76,7 @@ class PelangganController extends Controller
             }
 
             $pesanan->update(['total_harga' => $total]);
+            $meja->update(['status_meja' => 'terisi']);
 
             return $pesanan;
         });
