@@ -48,22 +48,32 @@
                             <td>
                                 <div class="table-actions">
                                     @if($item->status_meja === 'terisi')
-                                        <form method="POST" action="{{ route('admin.meja.kosongkan', $item) }}" onsubmit="return confirm('Kosongkan meja {{ $item->nomor_meja }}?');">
+                                        <form method="POST" action="{{ route('admin.meja.kosongkan', $item) }}" data-confirm="Kosongkan meja {{ $item->nomor_meja }}?">
                                             @csrf @method('PATCH')
                                             <button class="button button-dark" type="submit">Kosongkan meja</button>
                                         </form>
                                     @endif
-                                    <details class="crud-details">
-                                        <summary class="button button-light">✎ Ubah</summary>
-                                        <form class="crud-edit-form" method="POST" action="{{ route('admin.meja.update', $item) }}">
+                                    <button class="button button-light" type="button" onclick="document.getElementById('edit-meja-{{ $item->id_meja }}').showModal()">✎ Ubah</button>
+                                    <dialog class="table-edit-dialog" id="edit-meja-{{ $item->id_meja }}" aria-labelledby="edit-meja-title-{{ $item->id_meja }}">
+                                        <div class="table-edit-heading">
+                                            <div>
+                                                <h2 id="edit-meja-title-{{ $item->id_meja }}">Ubah meja</h2>
+                                                <p>Perbarui nama atau nomor meja.</p>
+                                            </div>
+                                            <button class="dialog-close" type="button" aria-label="Tutup" onclick="this.closest('dialog').close()">&times;</button>
+                                        </div>
+                                        <form class="table-edit-form" method="POST" action="{{ route('admin.meja.update', $item) }}">
                                             @csrf @method('PUT')
-                                            <label class="field">Nama / nomor meja<input class="crud-row-input" name="nomor_meja" value="{{ $item->nomor_meja }}" required maxlength="50"></label>
-                                            <small class="crud-note">Kode QR tidak berubah agar QR cetak tetap bisa dipakai.</small>
-                                            <button class="button button-dark" type="submit">Simpan perubahan</button>
+                                            <label class="field">Nama / nomor meja<input class="crud-row-input" name="nomor_meja" value="{{ $item->nomor_meja }}" required maxlength="50" autofocus></label>
+                                            <small class="crud-note">Kode QR tetap sama agar QR yang sudah dicetak masih dapat digunakan.</small>
+                                            <div class="table-edit-actions">
+                                                <button class="button button-light" type="button" onclick="this.closest('dialog').close()">Batal</button>
+                                                <button class="button button-dark" type="submit">Simpan perubahan</button>
+                                            </div>
                                         </form>
-                                    </details>
+                                    </dialog>
                                     @if($item->pesanan_count === 0)
-                                        <form method="POST" action="{{ route('admin.meja.destroy', $item) }}" onsubmit="return confirm('Hapus meja ini?');">
+                                        <form method="POST" action="{{ route('admin.meja.destroy', $item) }}" data-confirm="Hapus meja ini?" data-confirm-variant="danger">
                                             @csrf @method('DELETE')
                                             <button class="button button-light" type="submit">Hapus</button>
                                         </form>

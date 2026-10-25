@@ -62,7 +62,7 @@
                                         </form>
                                     </details>
                                     @if((int) auth()->id() !== (int) $akun->getKey())
-                                        <form method="POST" action="{{ route('admin.staff.destroy', $akun) }}" onsubmit="return confirm('Hapus akun ini? Jika memiliki riwayat transaksi, aksesnya akan dinonaktifkan agar riwayat tetap aman.');">
+                                        <form method="POST" action="{{ route('admin.staff.destroy', $akun) }}" data-confirm="Hapus akun ini? Jika memiliki riwayat transaksi, aksesnya akan dinonaktifkan agar riwayat tetap aman." data-confirm-variant="danger">
                                             @csrf @method('DELETE')
                                             <button class="button button-light" type="submit">Hapus</button>
                                         </form>

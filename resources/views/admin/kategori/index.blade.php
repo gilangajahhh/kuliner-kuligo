@@ -49,7 +49,7 @@
                         </td>
                         <td>
                             <form method="POST" action="{{ route('admin.kategori.destroy', $item) }}"
-                                onsubmit="return confirm('Hapus kategori ini? Kategori yang masih digunakan menu tidak dapat dihapus.');">
+                                data-confirm="Hapus kategori ini? Kategori yang masih digunakan menu tidak dapat dihapus." data-confirm-variant="danger">
                                 @csrf @method('DELETE')<button class="button button-light" type="submit">Hapus</button>
                             </form>
                         </td>

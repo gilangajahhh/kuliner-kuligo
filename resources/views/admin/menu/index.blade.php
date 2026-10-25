@@ -48,7 +48,7 @@
                             </td>
                             <td class="align-right"><div class="table-actions align-actions">
                                 <a class="button button-light" href="{{ route('admin.menu.edit', $item) }}">✎ Ubah</a>
-                                <form method="POST" action="{{ route('admin.menu.destroy', $item) }}" onsubmit="return confirm('Hapus menu ini? Menu yang sudah pernah dipesan akan ditolak agar riwayat transaksi tetap aman.');">
+                                <form method="POST" action="{{ route('admin.menu.destroy', $item) }}" data-confirm="Hapus menu ini? Menu yang sudah pernah dipesan akan ditolak agar riwayat transaksi tetap aman." data-confirm-variant="danger">
                                     @csrf @method('DELETE')
                                     <button class="button button-light" type="submit">Hapus</button>
                                 </form>

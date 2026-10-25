@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Admin') · Kuligo Resto POS</title>
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=branded-confirm-1">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
@@ -35,5 +35,14 @@
         <footer class="page-footer">▣ &nbsp;Kuligo Resto POS <span>Data katalog dan transaksi tersimpan pada sistem</span></footer>
     </div>
 </main>
+<dialog class="app-confirm-dialog" id="app-confirm-dialog" aria-labelledby="app-confirm-title" aria-describedby="app-confirm-message">
+    <div class="app-confirm-icon" aria-hidden="true">!</div>
+    <h2 id="app-confirm-title">Konfirmasi</h2>
+    <p id="app-confirm-message"></p>
+    <div class="app-confirm-actions">
+        <button class="button button-light" id="app-confirm-cancel" type="button">Batal</button>
+        <button class="button button-dark" id="app-confirm-accept" type="button">Lanjutkan</button>
+    </div>
+</dialog>
+<script src="{{ asset('js/admin.js') }}" defer></script>
 </body></html>
-
