@@ -44,6 +44,8 @@
             <div class="notice-error">{{ $errors->first() }}</div>@endif @yield('content')
         </div>
     </main>
+    <div class="global-loading" id="global-loading" role="status" aria-live="polite" hidden><span class="loading-spinner" aria-hidden="true"></span><span>Memproses permintaan…</span></div>
+    <script src="{{ asset('js/admin.js') }}" defer></script>
 </body>
 
 </html>

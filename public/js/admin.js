@@ -51,3 +51,22 @@
         }
     });
 })();
+
+(() => {
+    const indicator = document.querySelector('#global-loading');
+    if (!indicator) return;
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || form.method.toLowerCase() === 'get' || form.hasAttribute('data-no-loading')) return;
+        if (event.defaultPrevented) return;
+
+        const submitter = event.submitter;
+        if (submitter) {
+            submitter.disabled = true;
+            submitter.dataset.originalLabel = submitter.textContent.trim();
+            submitter.textContent = 'Memproses…';
+        }
+        indicator.hidden = false;
+    });
+})();

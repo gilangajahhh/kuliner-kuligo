@@ -44,5 +44,6 @@
         <button class="button button-dark" id="app-confirm-accept" type="button">Lanjutkan</button>
     </div>
 </dialog>
+<div class="global-loading" id="global-loading" role="status" aria-live="polite" hidden><span class="loading-spinner" aria-hidden="true"></span><span>Memproses permintaan…</span></div>
 <script src="{{ asset('js/admin.js') }}" defer></script>
 </body></html>

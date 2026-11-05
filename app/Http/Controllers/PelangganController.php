@@ -8,6 +8,7 @@ use App\Models\Meja;
 use App\Models\Pembayaran;
 use App\Models\Pesanan;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -28,6 +29,7 @@ class PelangganController extends Controller
         $meja = Meja::where('kode_qr', $kode_qr)->firstOrFail();
 
         $data = $request->validate([
+            'idempotency_key' => 'required|uuid',
             'nama_pelanggan' => 'nullable|string|max:100',
             'items' => 'required|array|min:1',
             'items.*.id_menu' => 'required|exists:menu,id_menu',
@@ -36,7 +38,26 @@ class PelangganController extends Controller
             'items.*.catatan' => 'nullable|string|max:255',
         ]);
 
-        $pesanan = DB::transaction(function () use ($data, $meja) {
+        $fingerprint = hash('sha256', json_encode([
+            'meja' => $meja->kode_qr,
+            'nama_pelanggan' => $data['nama_pelanggan'] ?? null,
+            'items' => $data['items'],
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            $pesanan = DB::transaction(function () use ($data, $meja, $fingerprint) {
+            $existing = Pesanan::where('idempotency_key', $data['idempotency_key'])
+                ->where('id_meja', $meja->id_meja)
+                ->first();
+
+            if ($existing) {
+                if (! hash_equals((string) $existing->idempotency_fingerprint, $fingerprint)) {
+                    abort(409, 'Permintaan checkout ini sudah digunakan untuk isi keranjang yang berbeda.');
+                }
+
+                return $existing;
+            }
+
             $meja = Meja::whereKey($meja->getKey())->lockForUpdate()->firstOrFail();
             $pesanan = Pesanan::create([
                 'id_meja' => $meja->id_meja,
@@ -44,6 +65,8 @@ class PelangganController extends Controller
                 'nama_pelanggan' => $data['nama_pelanggan'] ?? null,
                 'status_pesanan' => 'baru',
                 'total_harga' => 0,
+                'idempotency_key' => $data['idempotency_key'],
+                'idempotency_fingerprint' => $fingerprint,
             ]);
 
             $total = 0;
@@ -79,7 +102,20 @@ class PelangganController extends Controller
             $meja->update(['status_meja' => 'terisi']);
 
             return $pesanan;
-        });
+            });
+        } catch (QueryException $exception) {
+            if (! in_array((string) ($exception->errorInfo[0] ?? ''), ['23000', '23505'], true)) {
+                throw $exception;
+            }
+
+            $pesanan = Pesanan::where('idempotency_key', $data['idempotency_key'])->first();
+            if (! $pesanan || (int) $pesanan->id_meja !== (int) $meja->id_meja) {
+                throw $exception;
+            }
+            if (! hash_equals((string) $pesanan->idempotency_fingerprint, $fingerprint)) {
+                abort(409, 'Permintaan checkout ini sudah digunakan untuk isi keranjang yang berbeda.');
+            }
+        }
 
         return response()->json([
             'no_pesanan' => $pesanan->no_pesanan,
@@ -101,16 +137,33 @@ class PelangganController extends Controller
             'kanal_pembayaran' => ['required_if:metode_pembayaran,bank_transfer,e_wallet', 'nullable', 'in:' . $kanal],
         ]);
 
-        $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])->firstOrFail();
+        $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])
+            ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
+            ->firstOrFail();
 
-        $pembayaran = Pembayaran::create([
-            'id_pesanan' => $pesanan->id_pesanan,
-            'metode_pembayaran' => $data['metode_pembayaran'],
-            'kanal_pembayaran' => $data['kanal_pembayaran'] ?? null,
-            'jumlah_bayar' => $pesanan->total_harga,
-            'status_pembayaran' => 'pending',
-            'kode_transaksi_gateway' => 'TRX-' . Str::upper(Str::random(10)),
-        ]);
+        $pembayaran = DB::transaction(function () use ($pesanan, $data) {
+            $pesanan = Pesanan::whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
+            $existing = Pembayaran::where('id_pesanan', $pesanan->id_pesanan)->first();
+
+            if ($existing) {
+                $sameMethod = $existing->metode_pembayaran === $data['metode_pembayaran'];
+                $sameChannel = $existing->kanal_pembayaran === ($data['kanal_pembayaran'] ?? null);
+                if (! $sameMethod || ! $sameChannel) {
+                    abort(409, 'Pesanan ini sudah memiliki pembayaran dengan metode lain.');
+                }
+
+                return $existing;
+            }
+
+            return Pembayaran::create([
+                'id_pesanan' => $pesanan->id_pesanan,
+                'metode_pembayaran' => $data['metode_pembayaran'],
+                'kanal_pembayaran' => $data['kanal_pembayaran'] ?? null,
+                'jumlah_bayar' => $pesanan->total_harga,
+                'status_pembayaran' => 'pending',
+                'kode_transaksi_gateway' => 'TRX-' . Str::upper(Str::random(10)),
+            ]);
+        });
 
         // TODO: integrasi payment gateway asli (Midtrans/Xendit) di sini.
 
@@ -124,6 +177,7 @@ class PelangganController extends Controller
     {
         $pesanan = Pesanan::with('detail.menu', 'detail.varian', 'pembayaran')
             ->where('no_pesanan', $no_pesanan)
+            ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
             ->firstOrFail();
 
         return view('pelanggan.status', compact('pesanan'));

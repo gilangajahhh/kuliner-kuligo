@@ -14,7 +14,7 @@ class FotoMenuRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'gambar' => ['nullable', 'image', 'max:2048'],
+            'gambar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 
