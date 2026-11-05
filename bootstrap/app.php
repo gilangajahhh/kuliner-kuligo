@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust the local tunnel/reverse proxy (for example, ngrok) so Laravel
+        // sees the original HTTPS scheme and generates secure form URLs.
+        $middleware->trustProxies(at: '*');
         $middleware->alias(['role' => RoleMiddleware::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -92,7 +92,7 @@ class PelangganController extends Controller
     {
         $data = $request->validate([
             'no_pesanan' => 'required|exists:pesanan,no_pesanan',
-            'metode_pembayaran' => 'required|in:qris,e_wallet,tunai,',
+            'metode_pembayaran' => 'required|in:qris,e_wallet,tunai',
         ]);
 
         $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])->firstOrFail();
