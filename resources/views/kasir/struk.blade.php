@@ -2,6 +2,7 @@
     $metodePembayaran = match ($pesanan->pembayaran?->metode_pembayaran) {
         'qris' => 'QRIS',
         'e_wallet' => 'E-Wallet',
+        'bank_transfer' => 'Transfer bank',
         'tunai' => 'Tunai',
         'kartu_debit' => 'Kartu debit (riwayat)',
         'kartu_kredit' => 'Kartu kredit',
@@ -52,7 +53,7 @@
             <div class="grand"><span>Total</span><b>Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</b></div>
         </section>
         <section class="receipt-payment">
-            <div><span>Metode</span><b>{{ $metodePembayaran }}</b></div>
+            <div><span>Metode</span><b>{{ $metodePembayaran }}{{ $pesanan->pembayaran?->kanal_pembayaran ? ' · ' . $pesanan->pembayaran->kanal_pembayaran : '' }}</b></div>
             <div><span>Pembayaran</span><b>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }}</b></div>
             @if($pesanan->pembayaran?->waktu_pembayaran)
                 <div><span>Waktu bayar</span><b>{{ $pesanan->pembayaran->waktu_pembayaran->format('d/m/Y H:i') }}</b></div>

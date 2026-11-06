@@ -90,9 +90,15 @@ class PelangganController extends Controller
 
     public function bayar(Request $request, string $kode_qr)
     {
+        $kanal = match ($request->input('metode_pembayaran')) {
+            'bank_transfer' => 'BCA,BNI,BRI,Mandiri',
+            'e_wallet' => 'GoPay,OVO,DANA,ShopeePay',
+            default => 'BCA,BNI,BRI,Mandiri,GoPay,OVO,DANA,ShopeePay',
+        };
         $data = $request->validate([
             'no_pesanan' => 'required|exists:pesanan,no_pesanan',
-            'metode_pembayaran' => 'required|in:qris,e_wallet,tunai',
+            'metode_pembayaran' => 'required|in:qris,bank_transfer,e_wallet,tunai',
+            'kanal_pembayaran' => ['required_if:metode_pembayaran,bank_transfer,e_wallet', 'nullable', 'in:' . $kanal],
         ]);
 
         $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])->firstOrFail();
@@ -100,6 +106,7 @@ class PelangganController extends Controller
         $pembayaran = Pembayaran::create([
             'id_pesanan' => $pesanan->id_pesanan,
             'metode_pembayaran' => $data['metode_pembayaran'],
+            'kanal_pembayaran' => $data['kanal_pembayaran'] ?? null,
             'jumlah_bayar' => $pesanan->total_harga,
             'status_pembayaran' => 'pending',
             'kode_transaksi_gateway' => 'TRX-' . Str::upper(Str::random(10)),

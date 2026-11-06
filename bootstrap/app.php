@@ -16,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // sees the original HTTPS scheme and generates secure form URLs.
         $middleware->trustProxies(at: '*');
         $middleware->alias(['role' => RoleMiddleware::class]);
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+    

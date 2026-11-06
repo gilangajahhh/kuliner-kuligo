@@ -1,65 +1,192 @@
 <!doctype html>
 <html lang="id">
+
 <head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Menu · Kuligo Resto</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/customer.css?v=branded-variant-1">
 </head>
-<body class="customer-body" data-checkout="{{ route('menu.checkout', $meja->kode_qr) }}" data-payment="{{ route('menu.bayar', $meja->kode_qr) }}" data-status="{{ route('menu.status', [$meja->kode_qr, '__ORDER__']) }}">
-<header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark"><img src="/images/kuligo-food-mark.png" alt=""></span><span>kuligo<small>RESTO</small></span></a><div class="table-indicator"><span class="live-dot"></span> Meja {{ $meja->nomor_meja }}</div><button class="cart-trigger" type="button" onclick="document.querySelector('#cart').scrollIntoView({behavior:'smooth'})"><span>Keranjang</span><b id="header-count">0</b></button></header>
-<main class="customer-main">
-    <section class="welcome-row"><div><span class="eyebrow">SELAMAT DATANG DI KULIGO</span><h1>Temukan menu<br><em>favoritmu.</em></h1><p>Hidangan hangat dan minuman segar, dibuat dengan sepenuh hati.</p></div><div class="welcome-art" aria-hidden="true"><span>✦</span><div class="art-plate">🥘</div><i>BAIK · SEGAR · LEZAT</i></div></section>
-    <section class="promo-banner"><div><span class="promo-kicker">KHUSUS HARI INI</span><h2>Waktunya makan enak.</h2><p>Pilih menu favoritmu, kami siapkan untukmu.</p></div><span class="promo-spark">✳</span></section>
-    <div class="catalog-layout"><section class="catalog"><div class="catalog-head"><div><span class="eyebrow">DARI DAPUR KAMI</span><h2>Jelajahi menu</h2></div><label class="search-field"><span>⌕</span><input id="menu-search" type="search" placeholder="Cari menu..." aria-label="Cari menu"></label></div>
-        <nav class="category-tabs" aria-label="Kategori menu"><button class="category-tab active" data-category="all">Semua menu</button>@foreach($kategori as $item)<button class="category-tab" data-category="{{ $item->id_kategori }}">{{ $item->nama_kategori }}</button>@endforeach</nav>
-        @forelse($kategori as $group)
-            @if($group->menu->isNotEmpty())<section class="menu-group" data-group="{{ $group->id_kategori }}"><div class="group-heading"><h3>{{ $group->nama_kategori }}</h3><span>{{ $group->menu->count() }} pilihan</span></div><div class="menu-grid">
-                @foreach($group->menu as $item)
-                    @php
-                        $namaMenu = mb_strtolower($item->nama_menu);
-                        $gambarMenu = $item->url_gambar;
-                        if (! $gambarMenu) {
-                            if (str_contains($namaMenu, 'kebuli')) {
-                                $gambarMenu = '/images/menu/nasi-kebuli.webp';
-                            } elseif (str_contains($namaMenu, 'amer') || str_contains($namaMenu, 'kopi')) {
-                                $gambarMenu = '/images/menu/kopi-es.webp';
-                            } elseif (str_contains($namaMenu, 'kentang') || str_contains($namaMenu, 'fries')) {
-                                $gambarMenu = '/images/menu/kentang-goreng.webp';
-                            }
-                        }
-                    @endphp
-                <article class="menu-card" data-stock="{{ $item->stok }}" data-name="{{ strtolower($item->nama_menu.' '.$item->deskripsi) }}" data-category="{{ $group->id_kategori }}" data-id="{{ $item->id_menu }}" data-title="{{ $item->nama_menu }}" data-price="{{ $item->harga_dasar }}" data-image="{{ $gambarMenu }}" data-variants="{{ $item->varian->map(fn($v) => ['id' => $v->id_varian, 'name' => $v->nama_varian, 'price' => $v->harga_tambahan])->toJson() }}">
-                    <div class="food-image">@if($gambarMenu)<img src="{{ $gambarMenu }}" alt="{{ $item->nama_menu }}" loading="lazy">@else<span>{{ str_contains(strtolower($group->nama_kategori), 'minum') ? '🥤' : '🍽️' }}</span>@endif</div>
-                    <div class="menu-card-copy"><div class="menu-title-line"><h4>{{ $item->nama_menu }}</h4><button class="add-button" type="button" aria-label="Tambah {{ $item->nama_menu }}">+</button></div><p>{{ $item->deskripsi ?: 'Disiapkan segar oleh dapur Kuligo.' }}</p><div class="menu-card-meta"><strong>Rp {{ number_format($item->harga_dasar, 0, ',', '.') }}</strong><small>Tersedia: {{ $item->stok }}</small></div></div>
-                </article>@endforeach
-            </div></section>@endif
-        @empty <div class="empty-menu"><span>🍽️</span><h3>Menu sedang disiapkan</h3><p>Silakan kembali sebentar lagi.</p></div> @endforelse
-        @if($kategori->every(fn($group) => $group->menu->isEmpty()))<div class="empty-menu"><span>🍽️</span><h3>Menu sedang disiapkan</h3><p>Silakan kembali sebentar lagi.</p></div>@endif
-    </section>
-    <aside class="cart-panel" id="cart"><div class="cart-title"><div><span class="eyebrow">PESANANMU</span><h2>Keranjang</h2></div><span class="cart-count" id="cart-count">0 item</span></div><div class="cart-items" id="cart-items"><div class="cart-empty"><span>🧺</span><p>Keranjangmu masih kosong.<br>Yuk, pilih menu favorit!</p></div></div><div class="cart-summary"><div><span>Subtotal</span><b id="cart-subtotal">Rp 0</b></div><small>Harga sudah termasuk pajak.</small><button id="checkout-button" class="checkout-button" type="button" disabled>Lanjut ke pembayaran <span>→</span></button><p class="secure-note">Pembayaran diverifikasi oleh kasir</p></div></aside></div>
-</main>
-<footer class="customer-footer"><span>kuligo <b>RESTO</b></span><span>Terima kasih telah memilih kami · Meja {{ $meja->nomor_meja }}</span></footer>
-<dialog id="checkout-dialog" class="checkout-dialog"><form method="dialog" class="dialog-close"><button aria-label="Tutup">×</button></form><div id="review-step"><span class="eyebrow">LANGKAH 1 DARI 2</span><h2>Konfirmasi pesanan</h2><p class="dialog-intro">Pastikan menu dan jumlahnya sudah sesuai sebelum lanjut.</p><div id="review-items" class="review-items"></div><div class="dialog-total"><span>Total pesanan</span><b id="dialog-total">Rp 0</b></div><label class="form-label">Nama pemesan <span>(opsional)</span><input id="customer-name" maxlength="100" placeholder="Nama kamu"></label><button class="checkout-button" id="continue-payment" type="button">Lanjut ke pembayaran <span>→</span></button></div><div id="checkout-step" hidden><span class="eyebrow">LANGKAH 2 DARI 2</span><h2>Pilih pembayaran</h2><p class="dialog-intro">Pesananmu sudah dikonfirmasi. Pilih cara pembayaran.</p><div class="payment-options"><label class="payment-option"><input type="radio" name="payment-method" value="qris" checked><span class="payment-icon">▦</span><span><b>QRIS</b><small>Scan dengan aplikasi pembayaran</small></span><i>✓</i></label><label class="payment-option"><input type="radio" name="payment-method" value="e_wallet"><span class="payment-icon">◉</span><span><b>E-wallet</b><small>Dompet digital pilihanmu</small></span><i>✓</i></label><label class="payment-option"><input type="radio" name="payment-method" value="tunai"><span class="payment-icon">Rp</span><span><b>Tunai</b><small>Bayar langsung ke kasir</small></span><i>✓</i></label></div><div class="dialog-total"><span>Total pembayaran</span><b id="payment-total">Rp 0</b></div><button class="checkout-button" id="place-order" type="button">Buat pesanan & bayar <span>→</span></button><button class="back-to-review" id="back-to-review" type="button">← Kembali ke konfirmasi</button><p id="checkout-error" class="checkout-error" role="alert"></p></div><div id="success-step" class="success-step" hidden><span class="success-mark">✓</span><span class="eyebrow">PESANAN DITERIMA</span><h2>Terima kasih!<br>Pesanan sedang disiapkan.</h2><p>Kasir akan memverifikasi pembayaranmu. Tunjukkan nomor pesanan ini jika diperlukan.</p><div class="order-number"><span>Nomor pesanan</span><b id="success-order"></b></div><a class="checkout-button" id="track-order" href="#">Lihat status pesanan <span>→</span></a></div></dialog>
-<dialog id="variant-dialog" class="checkout-dialog variant-dialog" aria-labelledby="variant-title">
-    <form method="dialog" class="dialog-close"><button aria-label="Tutup">×</button></form>
-    <div class="variant-dialog-content">
-        <span class="eyebrow">PILIHAN MENU</span>
-        <h2 id="variant-title">Pilih varian</h2>
-        <p class="dialog-intro">Pilih satu varian sebelum menambahkan menu ke keranjang.</p>
-        <div id="variant-options" class="variant-options"></div>
-        <button class="checkout-button" id="add-selected-variant" type="button" disabled>Tambah ke keranjang <span>→</span></button>
-    </div>
-</dialog>
-<script>
-(()=>{const body=document.body,cart=new Map(),items=document.querySelector('#cart-items'),money=n=>'Rp '+new Intl.NumberFormat('id-ID').format(n),cards=[...document.querySelectorAll('.menu-card')];let activeCategory='all';
-function quantityInCart(menuId){return [...cart.values()].filter(line=>line.id===String(menuId)).reduce((sum,line)=>sum+line.quantity,0)}
-function render(){let count=0,total=0;items.innerHTML='';if(!cart.size){items.innerHTML='<div class="cart-empty"><span>🧺</span><p>Keranjangmu masih kosong.<br>Yuk, pilih menu favorit!</p></div>'}for(const [key,line] of cart){const quantity=line.quantity,price=Number(line.price),sum=price*quantity;count+=quantity;total+=sum;const row=document.createElement('div');row.className='cart-line';row.innerHTML=`<div class="cart-line-copy"><b>${line.title}</b><small>${line.variantName||'Reguler'} · ${money(sum)}</small></div><div class="quantity-control"><button type="button" data-action="minus" data-key="${key}" aria-label="Kurangi">−</button><b>${quantity}</b><button type="button" data-action="plus" data-key="${key}" aria-label="Tambah" ${quantityInCart(line.id)>=line.stock?'disabled':''}>+</button></div>`;items.append(row)}cards.forEach(card=>{const remaining=Math.max(0,Number(card.dataset.stock)-quantityInCart(card.dataset.id));card.querySelector('.menu-card-meta small').textContent=`Tersedia: ${remaining}`;card.querySelector('.add-button').disabled=remaining===0});document.querySelector('#cart-count').textContent=`${count} item`;document.querySelector('#header-count').textContent=count;document.querySelector('#cart-subtotal').textContent=money(total);document.querySelector('#dialog-total').textContent=money(total);document.querySelector('#payment-total').textContent=money(total);document.querySelector('#checkout-button').disabled=!count}
-function add(card,variant=null){const variants=JSON.parse(card.dataset.variants||'[]'),id=variant?.id||variants[0]?.id||'',name=variant?.name||variants[0]?.name||'',price=Number(card.dataset.price)+(Number(variant?.price??variants[0]?.price)||0),key=`${card.dataset.id}-${id}`,stock=Number(card.dataset.stock);if(quantityInCart(card.dataset.id)>=stock)return;if(cart.has(key))cart.get(key).quantity++;else cart.set(key,{id:card.dataset.id,title:card.dataset.title,price,variant:id||null,variantName:name,quantity:1,stock});render()}
-const variantDialog=document.querySelector('#variant-dialog'),variantOptions=document.querySelector('#variant-options'),variantTitle=document.querySelector('#variant-title'),addVariantButton=document.querySelector('#add-selected-variant');let pendingVariantCard=null,selectedVariant=null;function chooseVariant(card,variants){pendingVariantCard=card;selectedVariant=null;variantTitle.textContent=card.dataset.title;variantOptions.innerHTML='';addVariantButton.disabled=true;variants.forEach((variant,index)=>{const option=document.createElement('button');option.type='button';option.className='variant-choice';option.setAttribute('aria-pressed','false');const price=Number(variant.price)||0;const label=document.createElement('span');const name=document.createElement('b');name.textContent=variant.name;const detail=document.createElement('small');detail.textContent=price?`Tambahan ${money(price)}`:'Tanpa biaya tambahan';label.append(name,detail);const check=document.createElement('i');check.textContent='✓';option.append(label,check);option.addEventListener('click',()=>{selectedVariant=variant;variantOptions.querySelectorAll('.variant-choice').forEach(choice=>{const active=choice===option;choice.classList.toggle('selected',active);choice.setAttribute('aria-pressed',String(active))});addVariantButton.disabled=false});variantOptions.append(option)});variantDialog.showModal()}cards.forEach(card=>{card.querySelector('.add-button').addEventListener('click',()=>{const variants=JSON.parse(card.dataset.variants||'[]');if(variants.length>1)chooseVariant(card,variants);else add(card,variants[0]||null)})});addVariantButton.addEventListener('click',()=>{if(!pendingVariantCard||!selectedVariant)return;add(pendingVariantCard,selectedVariant);variantDialog.close();pendingVariantCard=null;selectedVariant=null});items.addEventListener('click',event=>{const button=event.target.closest('button[data-action]');if(!button)return;const line=cart.get(button.dataset.key);if(button.dataset.action==='plus'){if(quantityInCart(line.id)<line.stock)line.quantity++}else line.quantity--;if(line.quantity<1)cart.delete(button.dataset.key);render()});
-function filter(){const query=document.querySelector('#menu-search').value.trim().toLocaleLowerCase('id');cards.forEach(card=>card.hidden=!(activeCategory==='all'||card.dataset.category===activeCategory)||!card.dataset.name.includes(query));document.querySelectorAll('.menu-group').forEach(group=>group.hidden=!group.querySelector('.menu-card:not([hidden])'))}document.querySelector('#menu-search').addEventListener('input',filter);document.querySelectorAll('.category-tab').forEach(tab=>tab.addEventListener('click',()=>{activeCategory=tab.dataset.category;document.querySelectorAll('.category-tab').forEach(other=>other.classList.toggle('active',other===tab));filter()}));
-const dialog=document.querySelector('#checkout-dialog'),review=document.querySelector('#review-step'),paymentStep=document.querySelector('#checkout-step'),reviewItems=document.querySelector('#review-items');function renderReview(){reviewItems.innerHTML='';for(const line of cart.values()){const row=document.createElement('div');row.className='review-line';row.innerHTML=`<span><b>${line.quantity}× ${line.title}</b><small>${line.variantName||'Reguler'}</small></span><strong>${money(line.price*line.quantity)}</strong>`;reviewItems.append(row)}}document.querySelector('#checkout-button').addEventListener('click',()=>{renderReview();review.hidden=false;paymentStep.hidden=true;dialog.showModal()});document.querySelector('#continue-payment').addEventListener('click',()=>{review.hidden=true;paymentStep.hidden=false});document.querySelector('#back-to-review').addEventListener('click',()=>{paymentStep.hidden=true;review.hidden=false});document.querySelector('#place-order').addEventListener('click',async event=>{const button=event.currentTarget,error=document.querySelector('#checkout-error');button.disabled=true;button.innerHTML='Memproses…';error.textContent='';try{const checkout=await fetch(body.dataset.checkout,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},body:JSON.stringify({nama_pelanggan:document.querySelector('#customer-name').value,items:[...cart.values()].map(line=>({id_menu:line.id,id_varian:line.variant,jumlah:line.quantity}))})});const order=await checkout.json();if(!checkout.ok)throw new Error(Object.values(order.errors||{}).flat()[0]||order.message||'Pesanan belum dapat diproses.');const payment=await fetch(body.dataset.payment,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},body:JSON.stringify({no_pesanan:order.no_pesanan,metode_pembayaran:document.querySelector('[name="payment-method"]:checked').value})});const result=await payment.json();if(!payment.ok)throw new Error(result.message||'Pembayaran belum dapat diproses.');paymentStep.hidden=true;document.querySelector('#success-step').hidden=false;document.querySelector('#success-order').textContent=order.no_pesanan;document.querySelector('#track-order').href=body.dataset.status.replace('__ORDER__',encodeURIComponent(order.no_pesanan));cards.forEach(card=>{card.dataset.stock=Math.max(0,Number(card.dataset.stock)-quantityInCart(card.dataset.id))});cart.clear();render()}catch(exception){error.textContent=exception.message;button.disabled=false;button.innerHTML='Coba lagi <span>→</span>'}});render()})();
-</script>
-</body></html>
+
+<body class="customer-body" data-checkout="{{ route('menu.checkout', $meja->kode_qr) }}"
+    data-payment="{{ route('menu.bayar', $meja->kode_qr) }}"
+    data-status="{{ route('menu.status', [$meja->kode_qr, '__ORDER__']) }}">
+    <header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark"><img
+                    src="/images/kuligo-food-mark.png" alt=""></span><span>kuligo<small>RESTO</small></span></a>
+        <div class="table-indicator"><span class="live-dot"></span> Meja {{ $meja->nomor_meja }}</div><button
+            class="cart-trigger" type="button"
+            onclick="document.querySelector('#cart').scrollIntoView({behavior:'smooth'})"><span>Keranjang</span><b
+                id="header-count">0</b></button>
+    </header>
+    <main class="customer-main">
+        <section class="welcome-row">
+            <div><span class="eyebrow">SELAMAT DATANG DI KULIGO</span>
+                <h1>Temukan menu<br><em>favoritmu.</em></h1>
+                <p>Hidangan hangat dan minuman segar, dibuat dengan sepenuh hati.</p>
+            </div>
+            <div class="welcome-art" aria-hidden="true"><span>✦</span>
+                <div class="art-plate">🥘</div><i>BAIK · SEGAR · LEZAT</i>
+            </div>
+        </section>
+        <section class="promo-banner">
+            <div><span class="promo-kicker">KHUSUS HARI INI</span>
+                <h2>Waktunya makan enak.</h2>
+                <p>Pilih menu favoritmu, kami siapkan untukmu.</p>
+            </div><span class="promo-spark">✳</span>
+        </section>
+        <div class="catalog-layout">
+            <section class="catalog">
+                <div class="catalog-head">
+                    <div><span class="eyebrow">DARI DAPUR KAMI</span>
+                        <h2>Jelajahi menu</h2>
+                    </div><label class="search-field"><span>⌕</span><input id="menu-search" type="search"
+                            placeholder="Cari menu..." aria-label="Cari menu"></label>
+                </div>
+                <nav class="category-tabs" aria-label="Kategori menu"><button class="category-tab active"
+                        data-category="all">Semua menu</button>@foreach($kategori as $item)<button class="category-tab"
+                        data-category="{{ $item->id_kategori }}">{{ $item->nama_kategori }}</button>@endforeach</nav>
+                @forelse($kategori as $group)
+                    @if($group->menu->isNotEmpty())
+                        <section class="menu-group" data-group="{{ $group->id_kategori }}">
+                            <div class="group-heading">
+                                <h3>{{ $group->nama_kategori }}</h3><span>{{ $group->menu->count() }} pilihan</span>
+                            </div>
+                            <div class="menu-grid">
+                                @foreach($group->menu as $item)
+                                    @php
+                                        $namaMenu = mb_strtolower($item->nama_menu);
+                                        $gambarMenu = $item->url_gambar;
+                                        if (!$gambarMenu) {
+                                            if (str_contains($namaMenu, 'kebuli')) {
+                                                $gambarMenu = '/images/menu/nasi-kebuli.webp';
+                                            } elseif (str_contains($namaMenu, 'amer') || str_contains($namaMenu, 'kopi')) {
+                                                $gambarMenu = '/images/menu/kopi-es.webp';
+                                            } elseif (str_contains($namaMenu, 'kentang') || str_contains($namaMenu, 'fries')) {
+                                                $gambarMenu = '/images/menu/kentang-goreng.webp';
+                                            }
+                                        }
+                                    @endphp
+                                    <article class="menu-card" data-stock="{{ $item->stok }}"
+                                        data-name="{{ strtolower($item->nama_menu . ' ' . $item->deskripsi) }}"
+                                        data-category="{{ $group->id_kategori }}" data-id="{{ $item->id_menu }}"
+                                        data-title="{{ $item->nama_menu }}" data-price="{{ $item->harga_dasar }}"
+                                        data-image="{{ $gambarMenu }}"
+                                        data-variants="{{ $item->varian->map(fn($v) => ['id' => $v->id_varian, 'name' => $v->nama_varian, 'price' => $v->harga_tambahan])->toJson() }}">
+                                        <div class="food-image">@if($gambarMenu)<img src="{{ $gambarMenu }}"
+                                            alt="{{ $item->nama_menu }}"
+                                        loading="lazy">@else<span>{{ str_contains(strtolower($group->nama_kategori), 'minum') ? '🥤' : '🍽️' }}</span>@endif
+                                        </div>
+                                        <div class="menu-card-copy">
+                                            <div class="menu-title-line">
+                                                <h4>{{ $item->nama_menu }}</h4><button class="add-button" type="button"
+                                                    aria-label="Tambah {{ $item->nama_menu }}">+</button>
+                                            </div>
+                                            <p>{{ $item->deskripsi ?: 'Disiapkan segar oleh dapur Kuligo.' }}</p>
+                                            <div class="menu-card-meta"><strong>Rp
+                                                    {{ number_format($item->harga_dasar, 0, ',', '.') }}</strong><small>Tersedia:
+                                                    {{ $item->stok }}</small></div>
+                                        </div>
+                                </article>@endforeach
+                            </div>
+                    </section>@endif
+                @empty <div class="empty-menu"><span>🍽️</span>
+                    <h3>Menu sedang disiapkan</h3>
+                    <p>Silakan kembali sebentar lagi.</p>
+                </div> @endforelse
+                @if($kategori->every(fn($group) => $group->menu->isEmpty()))
+                    <div class="empty-menu"><span>🍽️</span>
+                        <h3>Menu sedang disiapkan</h3>
+                        <p>Silakan kembali sebentar lagi.</p>
+                </div>@endif
+            </section>
+            <aside class="cart-panel" id="cart">
+                <div class="cart-title">
+                    <div><span class="eyebrow">PESANANMU</span>
+                        <h2>Keranjang</h2>
+                    </div><span class="cart-count" id="cart-count">0 item</span>
+                </div>
+                <div class="cart-items" id="cart-items">
+                    <div class="cart-empty"><span>🧺</span>
+                        <p>Keranjangmu masih kosong.<br>Yuk, pilih menu favorit!</p>
+                    </div>
+                </div>
+                <div class="cart-summary">
+                    <div><span>Subtotal</span><b id="cart-subtotal">Rp 0</b></div><small>Harga sudah termasuk
+                        pajak.</small><button id="checkout-button" class="checkout-button" type="button" disabled>Lanjut
+                        ke pembayaran <span>→</span></button>
+                    <p class="secure-note">Pembayaran diverifikasi oleh kasir</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <footer class="customer-footer"><span>kuligo <b>RESTO</b></span><span>Terima kasih telah memilih kami · Meja
+            {{ $meja->nomor_meja }}</span></footer>
+    <dialog id="checkout-dialog" class="checkout-dialog">
+        <form method="dialog" class="dialog-close"><button aria-label="Tutup">×</button></form>
+        <div id="review-step"><span class="eyebrow">LANGKAH 1 DARI 2</span>
+            <h2>Konfirmasi pesanan</h2>
+            <p class="dialog-intro">Pastikan menu dan jumlahnya sudah sesuai sebelum lanjut.</p>
+            <div id="review-items" class="review-items"></div>
+            <div class="dialog-total"><span>Total pesanan</span><b id="dialog-total">Rp 0</b></div><label
+                class="form-label">Nama pemesan <span>(opsional)</span><input id="customer-name" maxlength="100"
+                    placeholder="Nama kamu"></label><button class="checkout-button" id="continue-payment"
+                type="button">Lanjut ke pembayaran <span>→</span></button>
+        </div>
+        <div id="checkout-step" hidden><span class="eyebrow">LANGKAH 2 DARI 2</span>
+            <h2>Pilih pembayaran</h2>
+            <p class="dialog-intro">Pesananmu sudah dikonfirmasi. Pilih cara pembayaran.</p>
+            <div class="payment-section"><span class="payment-section-title">PEMBAYARAN DIGITAL</span><div class="payment-options"><label class="payment-option"><input type="radio" name="payment-method"
+                        value="qris"><span class="payment-icon">▦</span><span><b>QRIS</b><small>Scan dengan aplikasi pembayaran</small></span><i>✓</i></label><label class="payment-option"><input type="radio" name="payment-method"
+                        value="bank_transfer" checked><span class="payment-icon">▤</span><span><b>Transfer bank</b><small>Transfer melalui rekening bank</small></span><i>✓</i></label><label class="payment-option"><input
+                        type="radio" name="payment-method" value="e_wallet"><span
+                        class="payment-icon">◉</span><span><b>E-wallet</b><small>Bayar dengan dompet digital</small></span><i>✓</i></label></div><div id="bank-choices" class="provider-choices" hidden><span class="payment-section-title">PILIH BANK</span><div class="provider-grid"><label class="provider-choice"><input type="radio" name="payment-provider" value="BCA"><span class="provider-mark">BCA</span><b>BCA</b></label><label class="provider-choice"><input type="radio" name="payment-provider" value="BNI"><span class="provider-mark">BNI</span><b>BNI</b></label><label class="provider-choice"><input type="radio" name="payment-provider" value="BRI"><span class="provider-mark">BRI</span><b>BRI</b></label><label class="provider-choice"><input type="radio" name="payment-provider" value="Mandiri"><span class="provider-mark">M</span><b>Mandiri</b></label></div></div><div id="wallet-choices" class="provider-choices" hidden><span class="payment-section-title">PILIH E-WALLET</span><div class="provider-grid"><label class="provider-choice"><input type="radio" name="payment-provider" value="GoPay"><span class="provider-mark">G</span><b>GoPay</b></label><label class="provider-choice"><input type="radio" name="payment-provider" value="OVO"><span class="provider-mark">O</span><b>OVO</b></label><label class="provider-choice"><input type="radio" name="payment-provider" value="DANA"><span class="provider-mark">D</span><b>DANA</b></label><label class="provider-choice"><input type="radio" name="payment-provider" value="ShopeePay"><span class="provider-mark">S</span><b>ShopeePay</b></label></div></div></div><div class="payment-section"><span class="payment-section-title">BAYAR LANGSUNG</span><div class="payment-options"><label class="payment-option"><input type="radio"
+                        name="payment-method" value="tunai"><span
+                        class="payment-icon">Rp</span><span><b>Tunai</b><small>Bayar langsung ke kasir</small></span><i>✓</i></label></div></div>
+            <div class="dialog-total"><span>Total pembayaran</span><b id="payment-total">Rp 0</b></div><button
+                class="checkout-button" id="place-order" type="button">Buat pesanan & bayar
+                <span>→</span></button><button class="back-to-review" id="back-to-review" type="button">← Kembali ke
+                konfirmasi</button>
+            <p id="checkout-error" class="checkout-error" role="alert"></p>
+        </div>
+        <div id="success-step" class="success-step" hidden><span class="success-mark">✓</span><span
+                class="eyebrow">PESANAN DITERIMA</span>
+            <h2>Terima kasih!<br>Pesanan sedang disiapkan.</h2>
+            <p>Kasir akan memverifikasi pembayaranmu. Tunjukkan nomor pesanan ini jika diperlukan.</p>
+            <div class="order-number"><span>Nomor pesanan</span><b id="success-order"></b></div><a
+                class="checkout-button" id="track-order" href="#">Lihat status pesanan <span>→</span></a>
+        </div>
+    </dialog>
+    <dialog id="variant-dialog" class="checkout-dialog variant-dialog" aria-labelledby="variant-title">
+        <form method="dialog" class="dialog-close"><button aria-label="Tutup">×</button></form>
+        <div class="variant-dialog-content">
+            <span class="eyebrow">PILIHAN MENU</span>
+            <h2 id="variant-title">Pilih varian</h2>
+            <p class="dialog-intro">Pilih satu varian sebelum menambahkan menu ke keranjang.</p>
+            <div id="variant-options" class="variant-options"></div>
+            <button class="checkout-button" id="add-selected-variant" type="button" disabled>Tambah ke keranjang
+                <span>→</span></button>
+        </div>
+    </dialog>
+    <script>
+        (() => {
+            const body = document.body, cart = new Map(), items = document.querySelector('#cart-items'), money = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(n), cards = [...document.querySelectorAll('.menu-card')]; let activeCategory = 'all';
+            function quantityInCart(menuId) { return [...cart.values()].filter(line => line.id === String(menuId)).reduce((sum, line) => sum + line.quantity, 0) }
+            function render() { let count = 0, total = 0; items.innerHTML = ''; if (!cart.size) { items.innerHTML = '<div class="cart-empty"><span>🧺</span><p>Keranjangmu masih kosong.<br>Yuk, pilih menu favorit!</p></div>' } for (const [key, line] of cart) { const quantity = line.quantity, price = Number(line.price), sum = price * quantity; count += quantity; total += sum; const row = document.createElement('div'); row.className = 'cart-line'; row.innerHTML = `<div class="cart-line-copy"><b>${line.title}</b><small>${line.variantName || 'Reguler'} · ${money(sum)}</small></div><div class="quantity-control"><button type="button" data-action="minus" data-key="${key}" aria-label="Kurangi">−</button><b>${quantity}</b><button type="button" data-action="plus" data-key="${key}" aria-label="Tambah" ${quantityInCart(line.id) >= line.stock ? 'disabled' : ''}>+</button></div>`; items.append(row) } cards.forEach(card => { const remaining = Math.max(0, Number(card.dataset.stock) - quantityInCart(card.dataset.id)); card.querySelector('.menu-card-meta small').textContent = `Tersedia: ${remaining}`; card.querySelector('.add-button').disabled = remaining === 0 }); document.querySelector('#cart-count').textContent = `${count} item`; document.querySelector('#header-count').textContent = count; document.querySelector('#cart-subtotal').textContent = money(total); document.querySelector('#dialog-total').textContent = money(total); document.querySelector('#payment-total').textContent = money(total); document.querySelector('#checkout-button').disabled = !count }
+            function add(card, variant = null) { const variants = JSON.parse(card.dataset.variants || '[]'), id = variant?.id || variants[0]?.id || '', name = variant?.name || variants[0]?.name || '', price = Number(card.dataset.price) + (Number(variant?.price ?? variants[0]?.price) || 0), key = `${card.dataset.id}-${id}`, stock = Number(card.dataset.stock); if (quantityInCart(card.dataset.id) >= stock) return; if (cart.has(key)) cart.get(key).quantity++; else cart.set(key, { id: card.dataset.id, title: card.dataset.title, price, variant: id || null, variantName: name, quantity: 1, stock }); render() }
+            const variantDialog = document.querySelector('#variant-dialog'), variantOptions = document.querySelector('#variant-options'), variantTitle = document.querySelector('#variant-title'), addVariantButton = document.querySelector('#add-selected-variant'); let pendingVariantCard = null, selectedVariant = null; function chooseVariant(card, variants) { pendingVariantCard = card; selectedVariant = null; variantTitle.textContent = card.dataset.title; variantOptions.innerHTML = ''; addVariantButton.disabled = true; variants.forEach((variant, index) => { const option = document.createElement('button'); option.type = 'button'; option.className = 'variant-choice'; option.setAttribute('aria-pressed', 'false'); const price = Number(variant.price) || 0; const label = document.createElement('span'); const name = document.createElement('b'); name.textContent = variant.name; const detail = document.createElement('small'); detail.textContent = price ? `Tambahan ${money(price)}` : 'Tanpa biaya tambahan'; label.append(name, detail); const check = document.createElement('i'); check.textContent = '✓'; option.append(label, check); option.addEventListener('click', () => { selectedVariant = variant; variantOptions.querySelectorAll('.variant-choice').forEach(choice => { const active = choice === option; choice.classList.toggle('selected', active); choice.setAttribute('aria-pressed', String(active)) }); addVariantButton.disabled = false }); variantOptions.append(option) }); variantDialog.showModal() } cards.forEach(card => { card.querySelector('.add-button').addEventListener('click', () => { const variants = JSON.parse(card.dataset.variants || '[]'); if (variants.length > 1) chooseVariant(card, variants); else add(card, variants[0] || null) }) }); addVariantButton.addEventListener('click', () => { if (!pendingVariantCard || !selectedVariant) return; add(pendingVariantCard, selectedVariant); variantDialog.close(); pendingVariantCard = null; selectedVariant = null }); items.addEventListener('click', event => { const button = event.target.closest('button[data-action]'); if (!button) return; const line = cart.get(button.dataset.key); if (button.dataset.action === 'plus') { if (quantityInCart(line.id) < line.stock) line.quantity++ } else line.quantity--; if (line.quantity < 1) cart.delete(button.dataset.key); render() });
+            function filter() { const query = document.querySelector('#menu-search').value.trim().toLocaleLowerCase('id'); cards.forEach(card => card.hidden = !(activeCategory === 'all' || card.dataset.category === activeCategory) || !card.dataset.name.includes(query)); document.querySelectorAll('.menu-group').forEach(group => group.hidden = !group.querySelector('.menu-card:not([hidden])')) } document.querySelector('#menu-search').addEventListener('input', filter); document.querySelectorAll('.category-tab').forEach(tab => tab.addEventListener('click', () => { activeCategory = tab.dataset.category; document.querySelectorAll('.category-tab').forEach(other => other.classList.toggle('active', other === tab)); filter() }));
+            const methodInputs = [...document.querySelectorAll('[name="payment-method"]')];
+            function updateProviders() { const method = document.querySelector('[name="payment-method"]:checked')?.value; document.querySelector('#bank-choices').hidden = method !== 'bank_transfer'; document.querySelector('#wallet-choices').hidden = method !== 'e_wallet'; }
+            methodInputs.forEach(input => input.addEventListener('change', updateProviders));
+            document.querySelector('#bank-choices input[value="BCA"]').checked = true;
+            const dialog = document.querySelector('#checkout-dialog'), review = document.querySelector('#review-step'), paymentStep = document.querySelector('#checkout-step'), reviewItems = document.querySelector('#review-items'); function renderReview() { reviewItems.innerHTML = ''; for (const line of cart.values()) { const row = document.createElement('div'); row.className = 'review-line'; row.innerHTML = `<span><b>${line.quantity}× ${line.title}</b><small>${line.variantName || 'Reguler'}</small></span><strong>${money(line.price * line.quantity)}</strong>`; reviewItems.append(row) } } document.querySelector('#checkout-button').addEventListener('click', () => { renderReview(); review.hidden = false; paymentStep.hidden = true; dialog.showModal() }); document.querySelector('#continue-payment').addEventListener('click', () => { review.hidden = true; paymentStep.hidden = false }); document.querySelector('#back-to-review').addEventListener('click', () => { paymentStep.hidden = true; review.hidden = false }); document.querySelector('#place-order').addEventListener('click', async event => { const button = event.currentTarget, error = document.querySelector('#checkout-error'); const method = document.querySelector('[name="payment-method"]:checked')?.value; const providerGroup = method === 'bank_transfer' ? '#bank-choices' : '#wallet-choices'; const provider = document.querySelector(`${providerGroup} [name="payment-provider"]:checked`)?.value; if (['bank_transfer', 'e_wallet'].includes(method) && !provider) { error.textContent = 'Pilih bank atau e-wallet terlebih dahulu.'; return; } button.disabled = true; button.innerHTML = 'Memproses…'; error.textContent = ''; try { const checkout = await fetch(body.dataset.checkout, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }, body: JSON.stringify({ nama_pelanggan: document.querySelector('#customer-name').value, items: [...cart.values()].map(line => ({ id_menu: line.id, id_varian: line.variant, jumlah: line.quantity })) }) }); const order = await checkout.json(); if (!checkout.ok) throw new Error(Object.values(order.errors || {}).flat()[0] || order.message || 'Pesanan belum dapat diproses.'); const payment = await fetch(body.dataset.payment, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }, body: JSON.stringify({ no_pesanan: order.no_pesanan, metode_pembayaran: method, kanal_pembayaran: provider || null }) }); const result = await payment.json(); if (!payment.ok) throw new Error(result.message || 'Pembayaran belum dapat diproses.'); paymentStep.hidden = true; document.querySelector('#success-step').hidden = false; document.querySelector('#success-order').textContent = order.no_pesanan; document.querySelector('#track-order').href = body.dataset.status.replace('__ORDER__', encodeURIComponent(order.no_pesanan)); cards.forEach(card => { card.dataset.stock = Math.max(0, Number(card.dataset.stock) - quantityInCart(card.dataset.id)) }); cart.clear(); render() } catch (exception) { error.textContent = exception.message; button.disabled = false; button.innerHTML = 'Coba lagi <span>→</span>' } }); updateProviders(); render()
+        })();
+    </script>
+</body>
+
+</html>
