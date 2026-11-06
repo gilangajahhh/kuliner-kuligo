@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/customer.css?v=mobile-layout-1">
+    <link rel="stylesheet" href="/css/customer.css?v=xendit-qris-1">
 </head>
 
 <body class="customer-body">
@@ -31,12 +31,32 @@
                             sistem kami</small></span></div>
                 <div
                     class="timeline-step {{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? 'done' : '' }}">
-                    <i>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? '✓' : '2' }}</i><span><b>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? 'Sedang disiapkan' : 'Menunggu verifikasi kasir' }}</b><small>{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) . ' · ' . ucfirst($pesanan->pembayaran->status_pembayaran) : 'Pembayaran akan diperiksa oleh kasir' }}</small></span>
+                    <i>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? '✓' : '2' }}</i><span><b>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? 'Sedang disiapkan' : ($pesanan->pembayaran?->kanal_pembayaran === 'xendit' ? 'Menunggu pembayaran terverifikasi otomatis' : 'Menunggu konfirmasi pembayaran oleh kasir') }}</b><small>{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) . ' · ' . ucfirst($pesanan->pembayaran->status_pembayaran) : 'Pembayaran akan diperiksa oleh kasir' }}</small></span>
                 </div>
                 <div
                     class="timeline-step {{ in_array($pesanan->status_pesanan, ['siap_diantar', 'selesai']) ? 'done' : '' }}">
                     <i>3</i><span><b>Siap dinikmati</b><small>Kami antar langsung ke meja kamu</small></span></div>
             </div>
+            @if($pesanan->status_pesanan !== 'batal' && $pesanan->pembayaran?->status_pembayaran === 'pending' && in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']))
+                <div class="manual-payment-instructions status-payment-instructions">
+                    @if($pesanan->pembayaran->metode_pembayaran === 'bank_transfer')
+                        <b>Transfer ke rekening berikut</b>
+                        <p>{{ config('payments.bank.name') }} · {{ config('payments.bank.account') }} · a.n. {{ config('payments.bank.account_name') }}</p>
+                    @elseif($pesanan->pembayaran->kanal_pembayaran === 'xendit' && $pesanan->pembayaran->qris_string)
+                        <b>Scan QRIS untuk membayar</b>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" alt="QRIS untuk pesanan {{ $pesanan->no_pesanan }}">
+                        <a href="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" target="_blank" rel="noopener">Buka atau unduh QR</a>
+                        @if($pesanan->pembayaran->qris_expires_at)
+                            <small>Berlaku sampai {{ $pesanan->pembayaran->qris_expires_at->timezone(config('app.timezone'))->format('d M Y, H:i') }}.</small>
+                        @endif
+                    @else
+                        <b>QRIS belum tersedia</b>
+                        <p>Silakan hubungi kasir untuk bantuan.</p>
+                    @endif
+                    <strong>Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}</strong>
+                    <small>{{ $pesanan->pembayaran->kanal_pembayaran === 'xendit' ? 'Status pembayaran diperbarui otomatis setelah Xendit mengirim notifikasi.' : 'Tunjukkan bukti pembayaran ke kasir agar pesanan dapat diproses.' }}</small>
+                </div>
+            @endif
             <div class="order-lines">
                 <h2>Ringkasan pesanan</h2>@foreach($pesanan->detail as $item)
                     <div><span>{{ $item->jumlah }}× {{ $item->menu->nama_menu }}@if($item->varian) <small>·
@@ -49,6 +69,12 @@
     </main>
     <footer class="customer-footer"><span>kuligo <b>RESTO</b></span><span>Terima kasih telah memilih kami</span>
     </footer>
+    @if($pesanan->pembayaran?->kanal_pembayaran === 'xendit' && $pesanan->pembayaran?->status_pembayaran === 'pending')
+        <script>
+            const refreshTimer = window.setInterval(() => window.location.reload(), 5000);
+            window.setTimeout(() => window.clearInterval(refreshTimer), 60000);
+        </script>
+    @endif
 </body>
 
 </html>

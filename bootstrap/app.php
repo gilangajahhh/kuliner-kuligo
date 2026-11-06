@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['role' => RoleMiddleware::class]);
         $middleware->trustProxies(at: '*');
+        $middleware->validateCsrfTokens(except: ['xendit/webhook']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (Throwable $exception, Request $request) {

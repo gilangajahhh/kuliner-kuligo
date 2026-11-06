@@ -50,6 +50,9 @@
             <div class="summary-label">PEMBAYARAN</div>
             <strong class="summary-value">{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) : 'Belum ada' }}</strong>
             <small>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }} · Rp {{ number_format($pesanan->pembayaran->jumlah_bayar ?? 0, 0, ',', '.') }}</small>
+            @if(in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']) && $pesanan->pembayaran?->status_pembayaran === 'pending')
+                <small>Minta dan periksa bukti transfer/QRIS pelanggan sebelum mengonfirmasi.</small>
+            @endif
             @if($pesanan->pembayaran?->metode_pembayaran === 'tunai' && $pesanan->pembayaran->uang_diterima !== null)
                 <small>Uang diterima Rp {{ number_format($pesanan->pembayaran->uang_diterima, 0, ',', '.') }} · Kembalian Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</small>
             @elseif($pesanan->pembayaran?->metode_pembayaran === 'e_wallet' && $pesanan->pembayaran->kembalian !== null)
@@ -65,7 +68,7 @@
                         </label>
                         <div class="cash-change-preview"><span id="cash-change-label">Kembalian</span><strong id="cash-change-value">Masukkan nominal uang</strong></div>
                     @endif
-                    <button class="button button-dark" type="submit">{{ $pesanan->pembayaran?->metode_pembayaran === 'tunai' ? 'Verifikasi & proses' : 'Verifikasi & proses' }}</button>
+                    <button class="button button-dark" type="submit">{{ in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']) ? 'Konfirmasi pembayaran & proses' : 'Verifikasi & proses' }}</button>
                 </form>
             @endif
         </article>
