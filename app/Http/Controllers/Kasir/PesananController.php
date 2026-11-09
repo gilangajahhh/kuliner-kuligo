@@ -8,6 +8,7 @@ use App\Models\Meja;
 use App\Models\Pesanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class PesananController extends Controller
@@ -31,7 +32,12 @@ class PesananController extends Controller
             ->get();
 
         if (request()->routeIs('kasir.pesanan')) {
-            return view('kasir.pesanan', compact('meja', 'pesananBaru', 'pesananDiproses', 'pesananSiap'));
+            $pesananSelesai = Pesanan::with('meja', 'pembayaran')
+                ->where('status_pesanan', 'selesai')
+                ->latest('updated_at')
+                ->limit(10)
+                ->get();
+            return view('kasir.pesanan', compact('meja', 'pesananBaru', 'pesananDiproses', 'pesananSiap', 'pesananSelesai'));
         }
 
         $ringkasan = [
@@ -81,7 +87,46 @@ class PesananController extends Controller
 
     public function statusMeja()
     {
-        return response()->json(Meja::orderBy('nomor_meja')->get(['id_meja', 'nomor_meja', 'status_meja']));
+        return response()->json(Meja::with(['pesanan' => fn ($query) => $query->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->latest('waktu_pesan')->with('pembayaran')])->orderBy('nomor_meja')->get(['id_meja', 'nomor_meja', 'status_meja']));
+    }
+
+    public function meja()
+    {
+        $meja = Meja::with(['pesanan' => fn ($query) => $query->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->latest('waktu_pesan')->with('pembayaran')->withCount('detail')])->orderBy('nomor_meja')->get();
+        $pesananTerakhir = Pesanan::with('pembayaran')
+            ->whereIn('id_pesanan', Pesanan::query()->selectRaw('MAX(id_pesanan)')->groupBy('id_meja'))
+            ->get(['id_pesanan', 'id_meja', 'no_pesanan', 'status_pesanan'])
+            ->keyBy('id_meja');
+        return view('kasir.meja', compact('meja', 'pesananTerakhir'));
+    }
+
+    public function tambahMeja(Request $request)
+    {
+        $data = $request->validate(['nomor_meja' => 'required|string|max:50|unique:meja,nomor_meja']);
+        $kode = Str::slug($data['nomor_meja']) ?: 'meja';
+        $kodeQr = $kode;
+        while (Meja::where('kode_qr', $kodeQr)->exists()) $kodeQr = $kode . '-' . Str::lower(Str::random(4));
+        Meja::create(['nomor_meja' => $data['nomor_meja'], 'kode_qr' => $kodeQr, 'status_meja' => 'kosong']);
+        return redirect()->route('kasir.meja.index')->with('success', 'Meja berhasil ditambahkan.');
+    }
+
+    public function pindahMeja(Request $request, Meja $meja)
+    {
+        $data = $request->validate(['meja_tujuan' => 'required|integer|exists:meja,id_meja']);
+        $tujuan = Meja::findOrFail($data['meja_tujuan']);
+        if ($tujuan->id_meja === $meja->id_meja || $tujuan->status_meja !== 'kosong') return response()->json(['message' => 'Pilih meja tujuan lain yang kosong.'], 422);
+        $pesanan = Pesanan::where('id_meja', $meja->id_meja)->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->latest('waktu_pesan')->first();
+        if (! $pesanan) return response()->json(['message' => 'Tidak ada pesanan aktif di meja ini.'], 422);
+        $moved = DB::transaction(function () use ($pesanan, $meja, $tujuan) {
+            $tujuan->newQuery()->whereKey($tujuan->id_meja)->lockForUpdate()->firstOrFail();
+            if ($tujuan->fresh()->status_meja !== 'kosong' || Pesanan::where('id_meja', $tujuan->id_meja)->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->exists()) return false;
+            $pesanan->update(['id_meja' => $tujuan->id_meja]);
+            $meja->update(['status_meja' => 'kosong']);
+            $tujuan->update(['status_meja' => 'terisi']);
+            return true;
+        });
+        if (! $moved) return response()->json(['message' => 'Meja tujuan baru saja digunakan. Pilih meja kosong lainnya.'], 422);
+        return response()->json(['message' => 'Pesanan dipindahkan ke ' . $tujuan->nomor_meja . '.']);
     }
 
     public function kosongkanMeja(Meja $meja)
@@ -161,8 +206,16 @@ class PesananController extends Controller
             'status' => 'required|in:diproses,siap_diantar,selesai',
         ]);
 
-        $pesanan->update(['status_pesanan' => $data['status']]);
-        $this->catatLog($pesanan, $data['status']);
+        DB::transaction(function () use ($pesanan, $data) {
+            $pesanan->update(['status_pesanan' => $data['status']]);
+            $this->catatLog($pesanan, $data['status']);
+            if ($data['status'] === 'selesai') {
+                $stillActive = Pesanan::where('id_meja', $pesanan->id_meja)->where('id_pesanan', '!=', $pesanan->id_pesanan)->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->exists();
+                if (! $stillActive) $pesanan->meja?->update(['status_meja' => 'kosong']);
+            }
+        });
+
+        if ($request->expectsJson()) return response()->json(['message' => 'Pesanan selesai.', 'receipt_url' => route('kasir.pesanan.struk', $pesanan)]);
 
         return back()->with('success', 'Status pesanan diperbarui menjadi ' . $data['status']);
     }

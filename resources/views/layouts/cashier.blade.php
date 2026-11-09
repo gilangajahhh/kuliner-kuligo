@@ -24,6 +24,7 @@
                 href="{{ route('kasir.dashboard') }}"><span>▦</span>Dashboard</a><a
                 class="{{ request()->routeIs('kasir.pesanan') || request()->routeIs('kasir.pesanan.*') ? 'active' : '' }}"
                 href="{{ route('kasir.pesanan') }}"><span>▤</span>Pesanan</a><a
+                class="{{ request()->routeIs('kasir.meja.*') ? 'active' : '' }}" href="{{ route('kasir.meja.index') }}"><span>▦</span>Manajemen Meja</a><a
                 class="{{ request()->routeIs('kasir.transaksi') ? 'active' : '' }}"
                 href="{{ route('kasir.transaksi') }}"><span>▧</span>Transaksi</a></nav>
         <div class="side-bottom">
@@ -44,6 +45,8 @@
             <div class="notice-error">{{ $errors->first() }}</div>@endif @yield('content')
         </div>
     </main>
+    <div class="global-loading" id="global-loading" role="status" aria-live="polite" hidden><span class="loading-spinner" aria-hidden="true"></span><span>Memproses permintaan…</span></div>
+    <script src="{{ asset('js/admin.js') }}" defer></script>
 </body>
 
 </html>

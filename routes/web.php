@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
 
 Route::get('/health', [HealthController::class, 'index'])->name('health');
+Route::post('/xendit/webhook', [PelangganController::class, 'xenditWebhook'])->name('xendit.webhook');
 Route::get('/', function () {
     if (! auth()->check()) {
         return redirect()->route('login');
@@ -29,6 +30,7 @@ Route::prefix('menu/{kode_qr}')->group(function () {
     Route::get('/', [PelangganController::class, 'index'])->name('menu.index');
     Route::post('/checkout', [PelangganController::class, 'checkout'])->name('menu.checkout');
     Route::post('/bayar', [PelangganController::class, 'bayar'])->name('menu.bayar');
+    Route::post('/bayar/{no_pesanan}/simulasi', [PelangganController::class, 'simulasiPembayaranXendit'])->name('menu.simulate-payment');
     Route::get('/status/{no_pesanan}', [PelangganController::class, 'status'])->name('menu.status');
 });
 
@@ -76,6 +78,9 @@ Route::middleware(['auth', 'role:admin,kasir'])->prefix('kasir')->name('kasir.')
     Route::get('/pesanan', [KasirPesanan::class, 'index'])->name('pesanan');
     Route::get('/transaksi', [KasirPesanan::class, 'transaksi'])->name('transaksi');
     Route::get('/meja/status', [KasirPesanan::class, 'statusMeja'])->name('meja.status');
+    Route::get('/meja', [KasirPesanan::class, 'meja'])->name('meja.index');
+    Route::post('/meja', [KasirPesanan::class, 'tambahMeja'])->name('meja.store');
+    Route::post('/meja/{meja}/pindah', [KasirPesanan::class, 'pindahMeja'])->name('meja.pindah');
     Route::patch('/meja/{meja}/kosongkan', [KasirPesanan::class, 'kosongkanMeja'])->name('meja.kosongkan');
     Route::get('/pesanan/{pesanan}', [KasirPesanan::class, 'show'])->name('pesanan.show');
     Route::get('/pesanan/{pesanan}/struk', [KasirPesanan::class, 'struk'])->name('pesanan.struk');
