@@ -8,6 +8,10 @@
         'kartu_kredit' => 'Kartu kredit',
         default => 'Belum dipilih',
     };
+$transferLabels = ['dana' => 'DANA', 'ovo' => 'OVO', 'gopay' => 'GoPay', 'bca' => 'BCA', 'bri' => 'BRI / BRImo', 'mandiri' => 'Mandiri', 'bjb' => 'BJB', 'seabank' => 'SeaBank'];
+$kanalTransfer = $transferLabels[$pesanan->pembayaran?->kanal_pembayaran] ?? $pesanan->pembayaran?->kanal_pembayaran;
+$waktuPesanWib = $pesanan->waktu_pesan?->copy()->timezone('Asia/Jakarta');
+$waktuBayarWib = $pesanan->pembayaran?->waktu_pembayaran?->copy()->timezone('Asia/Jakarta');
 @endphp
 <!doctype html>
 <html lang="id">
@@ -28,7 +32,7 @@
     <main class="receipt">
         @if(request('jenis') === 'dapur')
         <header class="receipt-head"><div class="brand">kuligo<small>RESTO POS</small></div><h1>TIKET DAPUR</h1></header>
-        <section class="receipt-meta"><div><span>No. pesanan</span><b>{{ $pesanan->no_pesanan }}</b></div><div><span>Meja</span><b>{{ $pesanan->meja->nomor_meja }}</b></div><div><span>Waktu</span><b>{{ now()->format('H:i') }}</b></div></section>
+        <section class="receipt-meta"><div><span>No. pesanan</span><b>{{ $pesanan->no_pesanan }}</b></div><div><span>Meja</span><b>{{ $pesanan->meja->nomor_meja }}</b></div><div><span>Waktu pemesanan</span><b>{{ $waktuPesanWib?->format('d/m/Y H:i') }} WIB</b></div></section>
         <table class="items"><thead><tr><th>Item</th><th>Jumlah</th></tr></thead><tbody>@foreach($pesanan->detail as $item)<tr><td><span class="item-name">{{ $item->menu->nama_menu }}</span>@if($item->varian)<small class="item-sub">{{ $item->varian->nama_varian }}</small>@endif @if($item->catatan)<small class="item-sub">Catatan: {{ $item->catatan }}</small>@endif</td><td>{{ $item->jumlah }}×</td></tr>@endforeach</tbody></table>
         <footer class="receipt-foot"><strong>{{ $pesanan->nama_pelanggan ?: 'Pelanggan' }}</strong>Salinan dapur</footer>
         @else
@@ -38,7 +42,7 @@
         </header>
         <section class="receipt-meta">
             <div><span>No. pesanan</span><b>{{ $pesanan->no_pesanan }}</b></div>
-            <div><span>Tanggal</span><b>{{ $pesanan->waktu_pesan?->format('d/m/Y H:i') }}</b></div>
+            <div><span>Tanggal pemesanan</span><b>{{ $waktuPesanWib?->format('d/m/Y H:i') }} WIB</b></div>
             <div><span>Meja</span><b>{{ $pesanan->meja->nomor_meja }}</b></div>
             <div><span>Pelanggan</span><b>{{ $pesanan->nama_pelanggan ?: 'Pelanggan' }}</b></div>
         </section>
@@ -59,10 +63,12 @@
             <div class="grand"><span>Total</span><b>Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</b></div>
         </section>
         <section class="receipt-payment">
-            <div><span>Metode</span><b>{{ $metodePembayaran }}{{ $pesanan->pembayaran?->kanal_pembayaran ? ' · ' . $pesanan->pembayaran->kanal_pembayaran : '' }}</b></div>
+            <div><span>Metode</span><b>{{ $metodePembayaran }}{{ $pesanan->pembayaran?->metode_pembayaran === 'bank_transfer' && $kanalTransfer ? ' · ' . $kanalTransfer : '' }}</b></div>
             <div><span>Pembayaran</span><b>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }}</b></div>
+            @if($pesanan->pembayaran?->metode_pembayaran === 'bank_transfer')
+            @endif
             @if($pesanan->pembayaran?->waktu_pembayaran)
-                <div><span>Waktu bayar</span><b>{{ $pesanan->pembayaran->waktu_pembayaran->format('d/m/Y H:i') }}</b></div>
+                <div><span>Waktu bayar</span><b>{{ $waktuBayarWib?->format('d/m/Y H:i') }} WIB</b></div>
             @endif
             @if($pesanan->pembayaran?->metode_pembayaran === 'tunai' && $pesanan->pembayaran->uang_diterima !== null)
                 <div><span>Uang diterima</span><b>Rp {{ number_format($pesanan->pembayaran->uang_diterima, 0, ',', '.') }}</b></div>

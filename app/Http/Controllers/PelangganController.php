@@ -19,11 +19,22 @@ class PelangganController extends Controller
     public function index(string $kode_qr)
     {
         $meja = Meja::where('kode_qr', $kode_qr)->firstOrFail();
+        session(['customer_menu_kode_qr' => $meja->kode_qr]);
         $kategori = KategoriMenu::with(['menu' => function ($q) {
             $q->where('status_tersedia', true)->where('stok', '>', 0)->with('varian');
         }])->orderBy('urutan_tampil')->get();
 
         return view('pelanggan.menu', compact('meja', 'kategori'));
+    }
+
+    public function menuAwal()
+    {
+        $meja = Meja::where('kode_qr', session('customer_menu_kode_qr'))->first();
+        $meja ??= Meja::orderBy('nomor_meja')->first();
+
+        abort_if(! $meja, 404, 'Menu pelanggan belum tersedia.');
+
+        return redirect()->route('menu.index', $meja->kode_qr);
     }
 
     public function checkout(Request $request, string $kode_qr)
@@ -131,21 +142,22 @@ class PelangganController extends Controller
         $data = $request->validate([
             'no_pesanan' => 'required|exists:pesanan,no_pesanan',
             'metode_pembayaran' => 'required|in:qris,bank_transfer,tunai',
+            'kanal_pembayaran' => 'required_if:metode_pembayaran,bank_transfer|nullable|in:dana,ovo,gopay,bca,bri,mandiri,bjb,seabank',
         ]);
 
         $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])
             ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
             ->firstOrFail();
 
-        if ($data['metode_pembayaran'] === 'bank_transfer'
-            && (! config('payments.bank.name') || ! config('payments.bank.account') || ! config('payments.bank.account_name'))) {
-            return response()->json(['message' => 'Rekening tujuan transfer belum diatur di .env (PAYMENT_BANK_NAME, PAYMENT_BANK_ACCOUNT, PAYMENT_BANK_ACCOUNT_NAME).'], 503);
-        }
         if ($data['metode_pembayaran'] === 'qris' && ! config('services.xendit.secret_key')) {
             return response()->json(['message' => 'Xendit belum siap. Isi XENDIT_SECRET_KEY di .env lalu jalankan php artisan config:clear.'], 503);
         }
 
-        $kanal = $data['metode_pembayaran'] === 'qris' ? 'xendit' : null;
+        $kanal = match ($data['metode_pembayaran']) {
+            'qris' => 'xendit',
+            'bank_transfer' => $data['kanal_pembayaran'],
+            default => null,
+        };
         $pembayaran = DB::transaction(function () use ($pesanan, $data, $kanal) {
             $pesanan = Pesanan::whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
             $existing = Pembayaran::where('id_pesanan', $pesanan->id_pesanan)->first();
@@ -193,7 +205,6 @@ class PelangganController extends Controller
             return response()->json([
                 'status' => $pembayaran->status_pembayaran,
                 'metode' => 'qris',
-                'sandbox' => str_starts_with((string) config('services.xendit.secret_key'), 'xnd_development_'),
                 'instructions' => [
                     'image' => $this->qrisImageUrl($qris['string']),
                     'download' => $this->qrisImageUrl($qris['string']),
@@ -208,9 +219,7 @@ class PelangganController extends Controller
             'metode' => $pembayaran->metode_pembayaran,
             'instructions' => match ($pembayaran->metode_pembayaran) {
                 'bank_transfer' => [
-                    'bank' => config('payments.bank.name'),
-                    'account' => config('payments.bank.account'),
-                    'account_name' => config('payments.bank.account_name'),
+                    'channel' => $pembayaran->kanal_pembayaran,
                 ],
                 default => null,
             },
@@ -301,54 +310,6 @@ class PelangganController extends Controller
     private function qrisImageUrl(string $qrString): string
     {
         return 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&format=png&data=' . urlencode($qrString);
-    }
-
-    public function simulasiPembayaranXendit(Request $request, string $kode_qr, string $no_pesanan)
-    {
-        $secret = (string) config('services.xendit.secret_key');
-        if (! str_starts_with($secret, 'xnd_development_')) {
-            return response()->json(['message' => 'Simulasi hanya tersedia dengan Secret Key sandbox Xendit.'], 403);
-        }
-
-        $pesanan = Pesanan::where('no_pesanan', $no_pesanan)
-            ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
-            ->firstOrFail();
-        $pembayaran = Pembayaran::where('id_pesanan', $pesanan->id_pesanan)
-            ->where('metode_pembayaran', 'qris')
-            ->where('kanal_pembayaran', 'xendit')
-            ->firstOrFail();
-
-        if ($pembayaran->status_pembayaran === 'berhasil') {
-            return response()->json(['message' => 'Pembayaran ini sudah terverifikasi.', 'status' => 'berhasil']);
-        }
-        if (! $pembayaran->kode_transaksi_gateway) {
-            return response()->json(['message' => 'Transaksi Xendit belum terbentuk. Buat ulang QRIS terlebih dahulu.'], 409);
-        }
-
-        $response = Http::withBasicAuth($secret, '')
-            ->acceptJson()
-            ->withHeaders(['api-version' => '2024-11-11'])
-            ->timeout(20)
-            ->post('https://api.xendit.co/v3/payment_requests/' . urlencode($pembayaran->kode_transaksi_gateway) . '/simulate', [
-                'amount' => (float) $pembayaran->jumlah_bayar,
-            ]);
-
-        if (! $response->successful()) {
-            Log::warning('Simulasi pembayaran QRIS Xendit gagal.', [
-                'order' => $pesanan->no_pesanan,
-                'http_status' => $response->status(),
-                'error_code' => $response->json('error_code'),
-            ]);
-
-            return response()->json([
-                'message' => $response->json('message') ?: 'Xendit belum dapat menyimulasikan pembayaran. Pastikan transaksi masih pending di Test Mode.',
-            ], 502);
-        }
-
-        return response()->json([
-            'status' => $response->json('status', 'PENDING'),
-            'message' => 'Simulasi dikirim. Tunggu webhook Xendit, lalu halaman status akan memperbarui pembayaran.',
-        ]);
     }
 
     public function xenditWebhook(Request $request)
@@ -459,5 +420,17 @@ class PelangganController extends Controller
             ->firstOrFail();
 
         return view('pelanggan.status', compact('pesanan'));
+    }
+
+    public function strukPelanggan(string $kode_qr, string $no_pesanan)
+    {
+        $pesanan = Pesanan::with('meja', 'detail.menu', 'detail.varian', 'pembayaran')
+            ->where('no_pesanan', $no_pesanan)
+            ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
+            ->firstOrFail();
+
+        abort_unless($pesanan->pembayaran?->status_pembayaran === 'berhasil', 404);
+
+        return view('pelanggan.struk', compact('pesanan'));
     }
 }

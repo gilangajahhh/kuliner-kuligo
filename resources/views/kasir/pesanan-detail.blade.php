@@ -50,8 +50,12 @@
             <div class="summary-label">PEMBAYARAN</div>
             <strong class="summary-value">{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) : 'Belum ada' }}</strong>
             <small>{{ ucfirst($pesanan->pembayaran->status_pembayaran ?? 'pending') }} · Rp {{ number_format($pesanan->pembayaran->jumlah_bayar ?? 0, 0, ',', '.') }}</small>
+            @if($pesanan->pembayaran?->metode_pembayaran === 'bank_transfer')
+                @php $transferLabels = ['dana' => 'DANA', 'ovo' => 'OVO', 'gopay' => 'GoPay', 'bca' => 'BCA', 'bri' => 'BRI / BRImo', 'mandiri' => 'Mandiri', 'bjb' => 'BJB', 'seabank' => 'SeaBank']; @endphp
+                <small>Transfer melalui {{ $transferLabels[$pesanan->pembayaran->kanal_pembayaran] ?? $pesanan->pembayaran->kanal_pembayaran }}</small>
+            @endif
             @if(in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']) && $pesanan->pembayaran?->status_pembayaran === 'pending')
-                <small>Minta dan periksa bukti transfer/QRIS pelanggan sebelum mengonfirmasi.</small>
+                <small>{{ $pesanan->pembayaran?->metode_pembayaran === 'bank_transfer' ? 'Konfirmasi pembayaran setelah pelanggan menyampaikan bahwa transfer telah dilakukan.' : 'Konfirmasi setelah pembayaran QRIS berhasil.' }}</small>
             @endif
             @if($pesanan->pembayaran?->metode_pembayaran === 'tunai' && $pesanan->pembayaran->uang_diterima !== null)
                 <small>Uang diterima Rp {{ number_format($pesanan->pembayaran->uang_diterima, 0, ',', '.') }} · Kembalian Rp {{ number_format($pesanan->pembayaran->kembalian, 0, ',', '.') }}</small>

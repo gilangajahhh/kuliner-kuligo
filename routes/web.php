@@ -30,9 +30,10 @@ Route::prefix('menu/{kode_qr}')->group(function () {
     Route::get('/', [PelangganController::class, 'index'])->name('menu.index');
     Route::post('/checkout', [PelangganController::class, 'checkout'])->name('menu.checkout');
     Route::post('/bayar', [PelangganController::class, 'bayar'])->name('menu.bayar');
-    Route::post('/bayar/{no_pesanan}/simulasi', [PelangganController::class, 'simulasiPembayaranXendit'])->name('menu.simulate-payment');
+    Route::get('/status/{no_pesanan}/struk', [PelangganController::class, 'strukPelanggan'])->name('menu.struk');
     Route::get('/status/{no_pesanan}', [PelangganController::class, 'status'])->name('menu.status');
 });
+Route::get('/menu', [PelangganController::class, 'menuAwal'])->name('menu.home');
 
 /*
 |--------------------------------------------------------------------------

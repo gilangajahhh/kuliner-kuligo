@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/css/customer.css?v=xendit-qris-1">
+    <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
 </head>
 
 <body class="customer-body">
@@ -35,13 +36,14 @@
                 </div>
                 <div
                     class="timeline-step {{ in_array($pesanan->status_pesanan, ['siap_diantar', 'selesai']) ? 'done' : '' }}">
-                    <i>3</i><span><b>Siap dinikmati</b><small>Kami antar langsung ke meja kamu</small></span></div>
+                    <i>{{ in_array($pesanan->status_pesanan, ['siap_diantar', 'selesai']) ? '✓' : '3' }}</i><span><b>Siap dinikmati</b><small>Kami antar langsung ke meja kamu</small></span></div>
             </div>
             @if($pesanan->status_pesanan !== 'batal' && $pesanan->pembayaran?->status_pembayaran === 'pending' && in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']))
                 <div class="manual-payment-instructions status-payment-instructions">
                     @if($pesanan->pembayaran->metode_pembayaran === 'bank_transfer')
-                        <b>Transfer ke rekening berikut</b>
-                        <p>{{ config('payments.bank.name') }} · {{ config('payments.bank.account') }} · a.n. {{ config('payments.bank.account_name') }}</p>
+                        @php $transferLabels = ['dana' => 'DANA', 'ovo' => 'OVO', 'gopay' => 'GoPay', 'bca' => 'BCA', 'bri' => 'BRI / BRImo', 'mandiri' => 'Mandiri', 'bjb' => 'BJB', 'seabank' => 'SeaBank']; @endphp
+                        <b>Transfer melalui {{ $transferLabels[$pesanan->pembayaran->kanal_pembayaran] ?? $pesanan->pembayaran->kanal_pembayaran }}</b>
+                        <p>Total transfer: Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}. Minta tujuan transfer kepada kasir.</p>
                     @elseif($pesanan->pembayaran->kanal_pembayaran === 'xendit' && $pesanan->pembayaran->qris_string)
                         <b>Scan QRIS untuk membayar</b>
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" alt="QRIS untuk pesanan {{ $pesanan->no_pesanan }}">
@@ -54,7 +56,7 @@
                         <p>Silakan hubungi kasir untuk bantuan.</p>
                     @endif
                     <strong>Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}</strong>
-                    <small>{{ $pesanan->pembayaran->kanal_pembayaran === 'xendit' ? 'Status pembayaran diperbarui otomatis setelah Xendit mengirim notifikasi.' : 'Tunjukkan bukti pembayaran ke kasir agar pesanan dapat diproses.' }}</small>
+                    <small>{{ $pesanan->pembayaran->kanal_pembayaran === 'xendit' ? 'Status pembayaran diperbarui otomatis setelah Xendit mengirim notifikasi.' : 'Beri tahu kasir setelah transfer. Kasir dapat langsung mengonfirmasi pembayaran.' }}</small>
                 </div>
             @endif
             <div class="order-lines">
@@ -65,11 +67,14 @@
                     <span>Total</span><b>Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</b></div>
             </div><a class="checkout-button" href="{{ route('menu.index', $pesanan->meja->kode_qr) }}">Pesan menu
                 lainnya <span>→</span></a>
+            @if($pesanan->pembayaran?->status_pembayaran === 'berhasil')
+                <a class="back-link" href="{{ route('menu.struk', [$pesanan->meja->kode_qr, $pesanan->no_pesanan]) }}" target="_blank" rel="noopener">Lihat / cetak bukti pembayaran</a>
+            @endif
         </section>
     </main>
     <footer class="customer-footer"><span>kuligo <b>RESTO</b></span><span>Terima kasih telah memilih kami</span>
     </footer>
-    @if($pesanan->pembayaran?->kanal_pembayaran === 'xendit' && $pesanan->pembayaran?->status_pembayaran === 'pending')
+    @if(in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']) && $pesanan->pembayaran?->status_pembayaran === 'pending')
         <script>
             const refreshTimer = window.setInterval(() => window.location.reload(), 5000);
             window.setTimeout(() => window.clearInterval(refreshTimer), 60000);
