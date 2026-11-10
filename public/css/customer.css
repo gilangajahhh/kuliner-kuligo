@@ -313,6 +313,7 @@ input {
     display: none;
 }
 .food-image {
+    position: relative;
     height: 143px;
     background: #f0ede4;
     display: grid;
@@ -327,6 +328,10 @@ input {
 .food-image > span {
     font-size: 49px;
     filter: drop-shadow(0 8px 7px #0002);
+}
+.food-image img[hidden],
+.food-image-fallback[hidden] {
+    display: none;
 }
 .menu-card-copy {
     padding: 13px 13px 15px;

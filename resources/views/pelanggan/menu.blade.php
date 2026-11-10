@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/customer.css?v=xendit-qris-1">
+    <link rel="stylesheet" href="/css/customer.css?v=menu-image-fallback-20261110">
     <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
 </head>
 
@@ -62,6 +62,7 @@
                                     @php
                                         $namaMenu = mb_strtolower($item->nama_menu);
                                         $gambarMenu = $item->url_gambar;
+                                        $emojiFoto = str_contains(mb_strtolower($group->nama_kategori), 'minum') ? '🥤' : '🍽️';
                                         if (!$gambarMenu) {
                                             if (str_contains($namaMenu, 'kebuli')) {
                                                 $gambarMenu = '/images/menu/nasi-kebuli.webp';
@@ -80,7 +81,7 @@
                                         data-variants="{{ $item->varian->map(fn($v) => ['id' => $v->id_varian, 'name' => $v->nama_varian, 'price' => $v->harga_tambahan])->toJson() }}">
                                         <div class="food-image">@if($gambarMenu)<img src="{{ $gambarMenu }}"
                                             alt="{{ $item->nama_menu }}"
-                                        loading="lazy">@else<span>{{ str_contains(strtolower($group->nama_kategori), 'minum') ? '🥤' : '🍽️' }}</span>@endif
+                                        loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="food-image-fallback" hidden>{{ $emojiFoto }}</span>@else<span>{{ $emojiFoto }}</span>@endif
                                         </div>
                                         <div class="menu-card-copy">
                                             <div class="menu-title-line">
@@ -206,6 +207,8 @@
             }
             function showOrderConfirmation(order, payment, quantities) {
                 paymentStep.hidden = true; document.querySelector('#success-step').hidden = false;
+                // Show the server-calculated amount, which is the same amount sent to Xendit.
+                document.querySelector('#payment-total').textContent = money(Number(order.total_harga));
                 document.querySelector('#success-order').textContent = order.no_pesanan;
                 document.querySelector('#track-order').href = body.dataset.status.replace('__ORDER__', encodeURIComponent(order.no_pesanan));
                 document.querySelector('#success-title').textContent = payment.metode === 'tunai' ? 'Pesanan diterima.' : 'Selesaikan pembayaranmu.';
@@ -230,6 +233,8 @@
                         const deadline = new Date(payment.instructions.expires_at).getTime();
                         const updateExpiry = () => {
                             const remaining = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
+                            image.hidden = remaining === 0;
+                            download.hidden = remaining === 0;
                             expiry.textContent = remaining > 0
                                 ? `Berlaku ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')} lagi.`
                                 : 'Waktu QR ini telah habis. Silakan hubungi kasir.';

@@ -20,8 +20,10 @@
                     <option value="{{ $item->id_kategori }}" @selected(old('id_kategori', $menu->id_kategori ?? '') == $item->id_kategori)>{{ $item->nama_kategori }}</option>@endforeach
                 </select></label><label class="field">Harga (Rp)<input type="number" min="0" name="harga_dasar" required
                     value="{{ old('harga_dasar', $menu->harga_dasar ?? '') }}" placeholder="30000"></label><label
-                class="field">Pilih foto menu <span class="optional">Opsional · maksimal 2 MB</span><input type="file"
-                    name="gambar" accept="image/*">@error('gambar')<span
+                class="field field-wide">Link foto langsung <span class="optional">Opsional · gunakan URL gambar publik JPG, PNG, atau WebP</span><input type="text"
+                    name="url_gambar" value="{{ old('url_gambar', $menu->url_gambar ?? '') }}" placeholder="https://contoh.com/foto-menu.jpg" autocomplete="url"></label><label
+                class="field field-wide">Atau unggah foto menu <span class="optional">Opsional · maksimal 2 MB</span><input type="file"
+                    name="gambar" accept="image/jpeg,image/png,image/webp">@error('gambar')<span
                     class="error-text">{{ $message }}</span>@enderror</label><label
                 class="field">Stok<input type="number" name="stok" min="0" step="1" required value="{{ old('stok', $menu->stok ?? 0) }}" placeholder="Contoh: 25"></label><label class="field field-wide">Deskripsi<textarea name="deskripsi" rows="4"
                     placeholder="Ceritakan menu Anda">{{ old('deskripsi', $menu->deskripsi ?? '') }}</textarea></label>

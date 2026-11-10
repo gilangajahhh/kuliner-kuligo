@@ -44,13 +44,16 @@
                         @php $transferLabels = ['dana' => 'DANA', 'ovo' => 'OVO', 'gopay' => 'GoPay', 'bca' => 'BCA', 'bri' => 'BRI / BRImo', 'mandiri' => 'Mandiri', 'bjb' => 'BJB', 'seabank' => 'SeaBank']; @endphp
                         <b>Transfer melalui {{ $transferLabels[$pesanan->pembayaran->kanal_pembayaran] ?? $pesanan->pembayaran->kanal_pembayaran }}</b>
                         <p>Total transfer: Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}. Minta tujuan transfer kepada kasir.</p>
-                    @elseif($pesanan->pembayaran->kanal_pembayaran === 'xendit' && $pesanan->pembayaran->qris_string)
+                    @elseif($pesanan->pembayaran->kanal_pembayaran === 'xendit' && $pesanan->pembayaran->qris_string && (! $pesanan->pembayaran->qris_expires_at || $pesanan->pembayaran->qris_expires_at->isFuture()))
                         <b>Scan QRIS untuk membayar</b>
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" alt="QRIS untuk pesanan {{ $pesanan->no_pesanan }}">
                         <a href="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" target="_blank" rel="noopener">Buka atau unduh QR</a>
                         @if($pesanan->pembayaran->qris_expires_at)
                             <small>Berlaku sampai {{ $pesanan->pembayaran->qris_expires_at->timezone(config('app.timezone'))->format('d M Y, H:i') }}.</small>
                         @endif
+                    @elseif($pesanan->pembayaran->kanal_pembayaran === 'xendit' && $pesanan->pembayaran->qris_string)
+                        <b>QRIS sudah kedaluwarsa</b>
+                        <p>Minta kasir membuat QRIS baru sebelum melanjutkan pembayaran.</p>
                     @else
                         <b>QRIS belum tersedia</b>
                         <p>Silakan hubungi kasir untuk bantuan.</p>

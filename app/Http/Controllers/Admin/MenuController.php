@@ -8,7 +8,6 @@ use App\Models\KategoriMenu;
 use App\Models\DetailPesanan;
 use App\Models\Menu;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class MenuController extends Controller
 {
@@ -32,7 +31,7 @@ class MenuController extends Controller
             'deskripsi' => 'nullable|string',
             'harga_dasar' => 'required|numeric|min:0',
             'stok' => 'required|integer|min:0',
-            'url_gambar' => 'nullable|string|max:255',
+            'url_gambar' => 'nullable|string|max:2048',
             'status_tersedia' => 'boolean',
             'varian' => 'nullable|array',
             'varian.*.id_varian' => 'nullable|integer',
@@ -42,7 +41,8 @@ class MenuController extends Controller
 
         if ($request->hasFile('gambar')) {
             $path = $request->file('gambar')->store('menu', 'public');
-            $data['url_gambar'] = Storage::disk('public')->url($path);
+            // Keep uploads same-origin so the image URL remains valid when APP_URL/tunnel changes.
+            $data['url_gambar'] = '/storage/' . $path;
         }
 
         DB::transaction(function () use ($data) {
@@ -74,7 +74,7 @@ class MenuController extends Controller
             'deskripsi' => 'nullable|string',
             'harga_dasar' => 'required|numeric|min:0',
             'stok' => 'required|integer|min:0',
-            'url_gambar' => 'nullable|string|max:255',
+            'url_gambar' => 'nullable|string|max:2048',
             'status_tersedia' => 'boolean',
             'varian' => 'nullable|array',
             'varian.*.id_varian' => 'nullable|integer',
@@ -86,7 +86,8 @@ class MenuController extends Controller
 
         if ($request->hasFile('gambar')) {
             $path = $request->file('gambar')->store('menu', 'public');
-            $data['url_gambar'] = Storage::disk('public')->url($path);
+            // Keep uploads same-origin so the image URL remains valid when APP_URL/tunnel changes.
+            $data['url_gambar'] = '/storage/' . $path;
         }
 
         DB::transaction(function () use ($data, $menu) {

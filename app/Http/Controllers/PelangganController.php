@@ -9,6 +9,7 @@ use App\Models\Pembayaran;
 use App\Models\Pesanan;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -233,6 +234,12 @@ class PelangganController extends Controller
         $expiresAt = now()->addMinutes(15)->utc();
 
         if ($pembayaran->qris_string) {
+            if ($pembayaran->qris_expires_at && $pembayaran->qris_expires_at->isPast()) {
+                return response()->json([
+                    'message' => 'QRIS pesanan ini sudah kedaluwarsa. Minta kasir membuat QRIS baru sebelum mencoba membayar.',
+                ], 409);
+            }
+
             return [
                 'string' => $pembayaran->qris_string,
                 'expires_at' => $pembayaran->qris_expires_at,
@@ -242,26 +249,38 @@ class PelangganController extends Controller
         $request = Http::withBasicAuth($secret, '')
             ->acceptJson()
             ->withHeaders(['api-version' => '2024-11-11'])
+            ->connectTimeout(5)
             ->timeout(20);
 
-        if ($pembayaran->kode_transaksi_gateway) {
-            $response = $request->get($baseUrl . '/' . urlencode($pembayaran->kode_transaksi_gateway));
-        } else {
-            $response = $request->withHeaders([
-                'Idempotency-Key' => 'qris-' . $pesanan->no_pesanan,
-            ])->post($baseUrl, [
-                'reference_id' => $pesanan->no_pesanan,
-                'type' => 'PAY',
-                'country' => 'ID',
-                'currency' => 'IDR',
-                'request_amount' => (float) $pembayaran->jumlah_bayar,
-                'channel_code' => 'QRIS',
-                'channel_properties' => [
-                    'expires_at' => $expiresAt->toIso8601String(),
-                    'qr_string_type' => 'DYNAMIC',
-                ],
-                'description' => 'Pembayaran pesanan ' . $pesanan->no_pesanan,
+        try {
+            if ($pembayaran->kode_transaksi_gateway) {
+                $response = $request->get($baseUrl . '/' . urlencode($pembayaran->kode_transaksi_gateway));
+            } else {
+                $response = $request->withHeaders([
+                    // Reusing this key makes a repeated request safe after a network timeout.
+                    'Idempotency-Key' => 'qris-' . $pesanan->no_pesanan,
+                ])->post($baseUrl, [
+                    'reference_id' => $pesanan->no_pesanan,
+                    'type' => 'PAY',
+                    'country' => 'ID',
+                    'currency' => 'IDR',
+                    'request_amount' => (float) $pembayaran->jumlah_bayar,
+                    'channel_code' => 'QRIS',
+                    'channel_properties' => [
+                        'expires_at' => $expiresAt->toIso8601String(),
+                        'qr_string_type' => 'DYNAMIC',
+                    ],
+                    'description' => 'Pembayaran pesanan ' . $pesanan->no_pesanan,
+                ]);
+            }
+        } catch (ConnectionException $exception) {
+            Log::warning('Koneksi ke Xendit gagal saat menyiapkan QRIS.', [
+                'order' => $pesanan->no_pesanan,
             ]);
+
+            return response()->json([
+                'message' => 'Koneksi ke penyedia QRIS sedang terganggu. Pembayaran belum terkonfirmasi; silakan coba lagi.',
+            ], 503);
         }
 
         if (! $response->successful()) {
@@ -281,6 +300,14 @@ class PelangganController extends Controller
 
         $body = $response->json();
         $paymentRequestId = $body['payment_request_id'] ?? null;
+        if (is_string($paymentRequestId) && $paymentRequestId !== '') {
+            // Save the gateway reference first so a retry can retrieve this request
+            // instead of accidentally creating another one if QR data is incomplete.
+            $pembayaran->update([
+                'kanal_pembayaran' => 'xendit',
+                'kode_transaksi_gateway' => $paymentRequestId,
+            ]);
+        }
         $qrString = collect($body['actions'] ?? [])->first(fn ($action) =>
             ($action['descriptor'] ?? null) === 'QR_STRING' && is_string($action['value'] ?? null)
         )['value'] ?? null;
