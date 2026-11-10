@@ -92,7 +92,7 @@ class PesananController extends Controller
 
     public function meja()
     {
-        $meja = Meja::with(['pesanan' => fn ($query) => $query->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->latest('waktu_pesan')->with('pembayaran')->withCount('detail')])->orderBy('nomor_meja')->get();
+        $meja = Meja::withCount('pesanan')->with(['pesanan' => fn ($query) => $query->whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->latest('waktu_pesan')->with('pembayaran')->withCount('detail')])->orderBy('nomor_meja')->get();
         $pesananTerakhir = Pesanan::with('pembayaran')
             ->whereIn('id_pesanan', Pesanan::query()->selectRaw('MAX(id_pesanan)')->groupBy('id_meja'))
             ->get(['id_pesanan', 'id_meja', 'no_pesanan', 'status_pesanan'])
@@ -108,6 +108,26 @@ class PesananController extends Controller
         while (Meja::where('kode_qr', $kodeQr)->exists()) $kodeQr = $kode . '-' . Str::lower(Str::random(4));
         Meja::create(['nomor_meja' => $data['nomor_meja'], 'kode_qr' => $kodeQr, 'status_meja' => 'kosong']);
         return redirect()->route('kasir.meja.index')->with('success', 'Meja berhasil ditambahkan.');
+    }
+
+    public function ubahMeja(Request $request, Meja $meja)
+    {
+        $data = $request->validate([
+            'nomor_meja' => ['required', 'string', 'max:50', Rule::unique('meja', 'nomor_meja')->ignore($meja->getKey(), 'id_meja')],
+        ]);
+        $meja->update(['nomor_meja' => $data['nomor_meja']]);
+
+        return redirect()->route('kasir.meja.index')->with('success', 'Nama meja berhasil diperbarui.');
+    }
+
+    public function hapusMeja(Meja $meja)
+    {
+        if ($meja->pesanan()->exists()) {
+            return back()->withErrors(['meja' => 'Meja memiliki riwayat pesanan dan tidak dapat dihapus.']);
+        }
+        $meja->delete();
+
+        return redirect()->route('kasir.meja.index')->with('success', 'Meja berhasil dihapus.');
     }
 
     public function pindahMeja(Request $request, Meja $meja)

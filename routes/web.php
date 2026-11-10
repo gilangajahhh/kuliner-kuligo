@@ -81,6 +81,8 @@ Route::middleware(['auth', 'role:admin,kasir'])->prefix('kasir')->name('kasir.')
     Route::get('/meja/status', [KasirPesanan::class, 'statusMeja'])->name('meja.status');
     Route::get('/meja', [KasirPesanan::class, 'meja'])->name('meja.index');
     Route::post('/meja', [KasirPesanan::class, 'tambahMeja'])->name('meja.store');
+    Route::put('/meja/{meja}', [KasirPesanan::class, 'ubahMeja'])->name('meja.update');
+    Route::delete('/meja/{meja}', [KasirPesanan::class, 'hapusMeja'])->name('meja.destroy');
     Route::post('/meja/{meja}/pindah', [KasirPesanan::class, 'pindahMeja'])->name('meja.pindah');
     Route::patch('/meja/{meja}/kosongkan', [KasirPesanan::class, 'kosongkanMeja'])->name('meja.kosongkan');
     Route::get('/pesanan/{pesanan}', [KasirPesanan::class, 'show'])->name('pesanan.show');
