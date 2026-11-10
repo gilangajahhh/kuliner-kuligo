@@ -325,6 +325,48 @@ class PelangganController extends Controller
             return response()->json(['message' => 'Transaksi Xendit belum terbentuk. Buat ulang QRIS terlebih dahulu.'], 409);
         }
 
+        return $this->kirimSimulasiXendit($pesanan, $pembayaran);
+    }
+
+    public function simulatorQris()
+    {
+        abort_unless(str_starts_with((string) config('services.xendit.secret_key'), 'xnd_development_'), 404);
+
+        return view('pelanggan.simulator-qris');
+    }
+
+    public function simulatorQrisScan(Request $request)
+    {
+        $secret = (string) config('services.xendit.secret_key');
+        abort_unless(str_starts_with($secret, 'xnd_development_'), 404);
+
+        $data = $request->validate([
+            'qris_string' => 'required|string|max:1500',
+        ]);
+
+        $pembayaran = Pembayaran::with('pesanan')
+            ->where('metode_pembayaran', 'qris')
+            ->where('kanal_pembayaran', 'xendit')
+            ->where('qris_string', $data['qris_string'])
+            ->latest('id_pembayaran')
+            ->first();
+
+        if (! $pembayaran) {
+            return response()->json(['message' => 'QR tidak cocok dengan transaksi sandbox yang dibuat aplikasi ini.'], 404);
+        }
+        if ($pembayaran->status_pembayaran === 'berhasil') {
+            return response()->json(['message' => 'Pembayaran bohongan ini sudah berhasil sebelumnya.', 'status' => 'berhasil']);
+        }
+        if ($pembayaran->status_pembayaran !== 'pending' || ! $pembayaran->kode_transaksi_gateway) {
+            return response()->json(['message' => 'Transaksi ini tidak lagi menunggu pembayaran.'], 409);
+        }
+
+        return $this->kirimSimulasiXendit($pembayaran->pesanan, $pembayaran);
+    }
+
+    private function kirimSimulasiXendit(Pesanan $pesanan, Pembayaran $pembayaran)
+    {
+        $secret = (string) config('services.xendit.secret_key');
         $response = Http::withBasicAuth($secret, '')
             ->acceptJson()
             ->withHeaders(['api-version' => '2024-11-11'])
@@ -347,7 +389,7 @@ class PelangganController extends Controller
 
         return response()->json([
             'status' => $response->json('status', 'PENDING'),
-            'message' => 'Simulasi dikirim. Tunggu webhook Xendit, lalu halaman status akan memperbarui pembayaran.',
+            'message' => 'Simulasi pembayaran bohongan dikirim. Tunggu webhook Xendit; halaman status pesanan akan berubah setelah notifikasi diterima.',
         ]);
     }
 

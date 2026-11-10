@@ -11,6 +11,8 @@ use App\Http\Controllers\HealthController;
 
 Route::get('/health', [HealthController::class, 'index'])->name('health');
 Route::post('/xendit/webhook', [PelangganController::class, 'xenditWebhook'])->name('xendit.webhook');
+Route::get('/simulator-qris', [PelangganController::class, 'simulatorQris'])->name('qris.simulator');
+Route::post('/simulator-qris/scan', [PelangganController::class, 'simulatorQrisScan'])->name('qris.simulator.scan');
 Route::get('/', function () {
     if (! auth()->check()) {
         return redirect()->route('login');
