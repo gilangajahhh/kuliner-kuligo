@@ -77,6 +77,9 @@ class PelangganController extends Controller
                 'id_meja' => $meja->id_meja,
                 'no_pesanan' => 'ORD-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
                 'nama_pelanggan' => $data['nama_pelanggan'] ?? null,
+                // Set from Laravel's Asia/Jakarta clock instead of relying on the
+                // database server's timezone for the column's CURRENT_TIMESTAMP default.
+                'waktu_pesan' => now(),
                 'status_pesanan' => 'baru',
                 'total_harga' => 0,
                 'idempotency_key' => $data['idempotency_key'],
