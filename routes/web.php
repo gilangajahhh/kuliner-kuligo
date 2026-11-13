@@ -11,6 +11,8 @@ use App\Http\Controllers\HealthController;
 
 Route::get('/health', [HealthController::class, 'index'])->name('health');
 Route::post('/xendit/webhook', [PelangganController::class, 'xenditWebhook'])->name('xendit.webhook');
+Route::get('/simulator-qris', [PelangganController::class, 'simulatorQris'])->name('qris.simulator');
+Route::post('/simulator-qris/scan', [PelangganController::class, 'simulatorQrisScan'])->name('qris.simulator.scan');
 Route::get('/', function () {
     if (! auth()->check()) {
         return redirect()->route('login');
@@ -30,6 +32,7 @@ Route::prefix('menu/{kode_qr}')->group(function () {
     Route::get('/', [PelangganController::class, 'index'])->name('menu.index');
     Route::post('/checkout', [PelangganController::class, 'checkout'])->name('menu.checkout');
     Route::post('/bayar', [PelangganController::class, 'bayar'])->name('menu.bayar');
+    Route::post('/status/{no_pesanan}/simulate-payment', [PelangganController::class, 'simulasiPembayaranXendit'])->name('menu.simulate-payment');
     Route::get('/status/{no_pesanan}/struk', [PelangganController::class, 'strukPelanggan'])->name('menu.struk');
     Route::get('/status/{no_pesanan}', [PelangganController::class, 'status'])->name('menu.status');
 });

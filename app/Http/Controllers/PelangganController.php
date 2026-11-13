@@ -209,6 +209,7 @@ class PelangganController extends Controller
             return response()->json([
                 'status' => $pembayaran->status_pembayaran,
                 'metode' => 'qris',
+                'sandbox' => str_starts_with((string) config('services.xendit.secret_key'), 'xnd_development_'),
                 'instructions' => [
                     'image' => $this->qrisImageUrl($qris['string']),
                     'download' => $this->qrisImageUrl($qris['string']),
@@ -340,6 +341,96 @@ class PelangganController extends Controller
     private function qrisImageUrl(string $qrString): string
     {
         return 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&format=png&data=' . urlencode($qrString);
+    }
+
+    public function simulasiPembayaranXendit(Request $request, string $kode_qr, string $no_pesanan)
+    {
+        $secret = (string) config('services.xendit.secret_key');
+        if (! str_starts_with($secret, 'xnd_development_')) {
+            return response()->json(['message' => 'Simulasi hanya tersedia dengan Secret Key sandbox Xendit.'], 403);
+        }
+
+        $pesanan = Pesanan::where('no_pesanan', $no_pesanan)
+            ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
+            ->firstOrFail();
+        $pembayaran = Pembayaran::where('id_pesanan', $pesanan->id_pesanan)
+            ->where('metode_pembayaran', 'qris')
+            ->where('kanal_pembayaran', 'xendit')
+            ->firstOrFail();
+
+        if ($pembayaran->status_pembayaran === 'berhasil') {
+            return response()->json(['message' => 'Pembayaran ini sudah terverifikasi.', 'status' => 'berhasil']);
+        }
+        if (! $pembayaran->kode_transaksi_gateway) {
+            return response()->json(['message' => 'Transaksi Xendit belum terbentuk. Buat ulang QRIS terlebih dahulu.'], 409);
+        }
+
+        return $this->kirimSimulasiXendit($pesanan, $pembayaran);
+    }
+
+    public function simulatorQris()
+    {
+        abort_unless(str_starts_with((string) config('services.xendit.secret_key'), 'xnd_development_'), 404);
+
+        return view('pelanggan.simulator-qris');
+    }
+
+    public function simulatorQrisScan(Request $request)
+    {
+        $secret = (string) config('services.xendit.secret_key');
+        abort_unless(str_starts_with($secret, 'xnd_development_'), 404);
+
+        $data = $request->validate([
+            'qris_string' => 'required|string|max:1500',
+        ]);
+
+        $pembayaran = Pembayaran::with('pesanan')
+            ->where('metode_pembayaran', 'qris')
+            ->where('kanal_pembayaran', 'xendit')
+            ->where('qris_string', $data['qris_string'])
+            ->latest('id_pembayaran')
+            ->first();
+
+        if (! $pembayaran) {
+            return response()->json(['message' => 'QR tidak cocok dengan transaksi sandbox yang dibuat aplikasi ini.'], 404);
+        }
+        if ($pembayaran->status_pembayaran === 'berhasil') {
+            return response()->json(['message' => 'Pembayaran bohongan ini sudah berhasil sebelumnya.', 'status' => 'berhasil']);
+        }
+        if ($pembayaran->status_pembayaran !== 'pending' || ! $pembayaran->kode_transaksi_gateway) {
+            return response()->json(['message' => 'Transaksi ini tidak lagi menunggu pembayaran.'], 409);
+        }
+
+        return $this->kirimSimulasiXendit($pembayaran->pesanan, $pembayaran);
+    }
+
+    private function kirimSimulasiXendit(Pesanan $pesanan, Pembayaran $pembayaran)
+    {
+        $secret = (string) config('services.xendit.secret_key');
+        $response = Http::withBasicAuth($secret, '')
+            ->acceptJson()
+            ->withHeaders(['api-version' => '2024-11-11'])
+            ->timeout(20)
+            ->post('https://api.xendit.co/v3/payment_requests/' . urlencode($pembayaran->kode_transaksi_gateway) . '/simulate', [
+                'amount' => (float) $pembayaran->jumlah_bayar,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('Simulasi pembayaran QRIS Xendit gagal.', [
+                'order' => $pesanan->no_pesanan,
+                'http_status' => $response->status(),
+                'error_code' => $response->json('error_code'),
+            ]);
+
+            return response()->json([
+                'message' => $response->json('message') ?: 'Xendit belum dapat menyimulasikan pembayaran. Pastikan transaksi masih pending di Test Mode.',
+            ], 502);
+        }
+
+        return response()->json([
+            'status' => $response->json('status', 'PENDING'),
+            'message' => 'Simulasi pembayaran bohongan dikirim. Tunggu webhook Xendit; halaman status pesanan akan berubah setelah notifikasi diterima.',
+        ]);
     }
 
     public function xenditWebhook(Request $request)

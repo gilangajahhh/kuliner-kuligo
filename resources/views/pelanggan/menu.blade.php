@@ -10,12 +10,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
+
     <link rel="stylesheet" href="/css/customer.css?v=menu-image-fallback-20261110">
     <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
+
+    <link rel="stylesheet" href="/css/customer.css?v=qris-actions-2">
+
 </head>
 
 <body class="customer-body" data-checkout="{{ route('menu.checkout', $meja->kode_qr) }}"
     data-payment="{{ route('menu.bayar', $meja->kode_qr) }}"
+
+
+    data-simulate="{{ route('menu.simulate-payment', ['kode_qr' => $meja->kode_qr, 'no_pesanan' => '__ORDER__']) }}"
+    data-qris-simulator="{{ route('qris.simulator') }}"
+
     data-status="{{ route('menu.status', [$meja->kode_qr, '__ORDER__']) }}">
     <header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark"><img
                     src="/images/kuligo-food-mark.png" alt=""></span><span>kuligo<small>RESTO</small></span></a>
@@ -129,7 +138,7 @@
     <footer class="customer-footer"><span>kuligo <b>RESTO</b></span><span>Terima kasih telah memilih kami · Meja
             {{ $meja->nomor_meja }}</span></footer>
     <dialog id="checkout-dialog" class="checkout-dialog">
-        <form method="dialog" class="dialog-close"><button aria-label="Tutup">×</button></form>
+        <form method="dialog" class="dialog-close"><button aria-label="Tutup">x</button></form>
         <div id="review-step"><span class="eyebrow">LANGKAH 1 DARI 2</span>
             <h2>Konfirmasi pesanan</h2>
             <p class="dialog-intro">Pastikan menu dan jumlahnya sudah sesuai sebelum lanjut.</p>
@@ -142,8 +151,9 @@
         <div id="checkout-step" hidden><span class="eyebrow">LANGKAH 2 DARI 2</span>
             <h2>Pilih pembayaran</h2>
             <p class="dialog-intro">Pilih metode pembayaran untuk pesananmu.</p>
+
             <div class="payment-section"><span class="payment-section-title">PEMBAYARAN ONLINE MANUAL</span><div class="payment-options">
-                <label class="payment-option"><input type="radio" name="payment-method" value="bank_transfer" checked><span class="payment-icon">▤</span><span><b>Transfer bank / e-wallet</b><small>Pilih aplikasi, lalu konfirmasi pembayaran ke kasir</small></span><i>✓</i></label>
+                <label class="payment-option"><input type="radio" name="payment-method" value="bank_transfer" checked><span class="payment-icon">▤</span><span><b>Transfer bank / e-wallet</b><small>Pilih tujuan transfer, lalu konfirmasi ke kasir</small></span><i>✓</i></label>
                 <label class="payment-option"><input type="radio" name="payment-method" value="qris"><span class="payment-icon">▦</span><span><b>QRIS</b><small>Scan QRIS merchant setelah pesanan dibuat</small></span><i>✓</i></label>
             </div>
             <div class="transfer-channel-picker" id="transfer-channel-picker">
@@ -176,7 +186,7 @@
         </div>
     </dialog>
     <dialog id="variant-dialog" class="checkout-dialog variant-dialog" aria-labelledby="variant-title">
-        <form method="dialog" class="dialog-close"><button aria-label="Tutup">×</button></form>
+        <form method="dialog" class="dialog-close"><button aria-label="Tutup">x</button></form>
         <div class="variant-dialog-content">
             <span class="eyebrow">PILIHAN MENU</span>
             <h2 id="variant-title">Pilih varian</h2>
@@ -225,9 +235,32 @@
                 } else if (payment.metode === 'qris') {
                     const title = document.createElement('b'); title.textContent = 'Scan QRIS untuk membayar';
                     const image = document.createElement('img'); image.src = payment.instructions.image; image.alt = 'QRIS merchant';
+
                     const download = document.createElement('a'); download.href = payment.instructions.download; download.target = '_blank'; download.rel = 'noopener'; download.textContent = 'Buka atau unduh QR';
-                    const note = document.createElement('small'); note.textContent = 'QR ini khusus untuk pesanan ini. Simpan QR lalu bayar dari aplikasi yang mendukung QRIS.';
+                    const note = document.createElement('small'); note.textContent = 'Pindai QR ini dari aplikasi pembayaran yang mendukung QRIS.';
                     instructionBox.append(title, image, download, note);
+                    if (payment.sandbox) {
+                        const actions = document.createElement('div'); actions.className = 'qris-demo-actions';
+                        const scannerLink = document.createElement('a'); scannerLink.href = body.dataset.qrisSimulator; scannerLink.target = '_blank'; scannerLink.rel = 'noopener'; scannerLink.className = 'qris-action qris-action-secondary'; scannerLink.textContent = 'Buka pemindai QR';
+                        const simulate = document.createElement('button'); simulate.type = 'button'; simulate.className = 'qris-action qris-action-primary'; simulate.textContent = 'Simulasikan pembayaran';
+                        const feedback = document.createElement('small'); feedback.className = 'qris-demo-feedback'; feedback.setAttribute('role', 'status');
+                        simulate.addEventListener('click', async () => {
+                            simulate.disabled = true; scannerLink.setAttribute('aria-disabled', 'true'); simulate.textContent = 'Mengirim simulasi…'; feedback.textContent = '';
+                            try {
+                                const response = await fetch(body.dataset.simulate.replace('__ORDER__', encodeURIComponent(order.no_pesanan)), {
+                                    method: 'POST', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                                });
+                                const result = await response.json();
+                                if (!response.ok) throw new Error(result.message || 'Simulasi gagal dikirim.');
+                                simulate.textContent = 'Pembayaran tersimulasi ✓'; feedback.textContent = 'Berhasil dikirim. Memperbarui status pesanan…';
+                                window.setTimeout(() => { window.location.href = body.dataset.status.replace('__ORDER__', encodeURIComponent(order.no_pesanan)); }, 2000);
+                            } catch (exception) {
+                                simulate.disabled = false; scannerLink.removeAttribute('aria-disabled'); simulate.textContent = 'Coba simulasi lagi'; feedback.textContent = exception.message; feedback.classList.add('is-error');
+                            }
+                        });
+                        actions.append(scannerLink, simulate); instructionBox.append(actions, feedback);
+                    }
+
                     if (payment.instructions.expires_at) {
                         const expiry = document.createElement('small');
                         const deadline = new Date(payment.instructions.expires_at).getTime();

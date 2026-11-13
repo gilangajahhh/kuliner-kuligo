@@ -48,6 +48,10 @@
                         <b>Scan QRIS untuk membayar</b>
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" alt="QRIS untuk pesanan {{ $pesanan->no_pesanan }}">
                         <a href="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;format=png&amp;data={{ urlencode($pesanan->pembayaran->qris_string) }}" target="_blank" rel="noopener">Buka atau unduh QR</a>
+                        @if(str_starts_with((string) config('services.xendit.secret_key'), 'xnd_development_'))
+                            <a class="qris-action qris-action-secondary" href="{{ route('qris.simulator') }}" target="_blank" rel="noopener">Buka simulator scan QRIS</a>
+                            <small>Mode sandbox: buka simulator di perangkat lain, lalu scan QR pesanan ini.</small>
+                        @endif
                         @if($pesanan->pembayaran->qris_expires_at)
                             <small>Berlaku sampai {{ $pesanan->pembayaran->qris_expires_at->timezone(config('app.timezone'))->format('d M Y, H:i') }}.</small>
                         @endif
