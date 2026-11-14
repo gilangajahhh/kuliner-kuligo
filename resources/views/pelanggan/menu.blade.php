@@ -10,7 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/customer.css?v=qris-actions-2">
+    <link rel="stylesheet" href="/css/customer.css?v=xendit-qris-2">
+    <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
 </head>
 
 <body class="customer-body" data-checkout="{{ route('menu.checkout', $meja->kode_qr) }}"
@@ -142,9 +143,23 @@
         <div id="checkout-step" hidden><span class="eyebrow">LANGKAH 2 DARI 2</span>
             <h2>Pilih pembayaran</h2>
             <p class="dialog-intro">Pilih metode pembayaran untuk pesananmu.</p>
-                    <div class="payment-section"><span class="payment-section-title">PEMBAYARAN ONLINE MANUAL</span><div class="payment-options">
-                <label class="payment-option"><input type="radio" name="payment-method" value="bank_transfer" checked><span class="payment-icon">▤</span><span><b>Transfer bank</b><small>Nomor rekening tujuan ditampilkan setelah pesanan dibuat</small></span><i>✓</i></label>
-                <label class="payment-option"><input type="radio" name="payment-method" value="qris"><span class="payment-icon">▦</span><span><b>QRIS</b><small>Scan QRIS merchant setelah pesanan dibuat</small></span><i>✓</i></label>
+            <div class="payment-section"><span class="payment-section-title">PEMBAYARAN ONLINE MANUAL</span><div class="payment-options">
+                <label class="payment-option"><input type="radio" name="payment-method" value="bank_transfer" checked><span class="payment-icon">▤</span><span><b>Transfer bank / e-wallet</b><small>Pilih aplikasi, lalu konfirmasi pembayaran ke kasir</small></span><i>✓</i></label>
+                <label class="payment-option"><input type="radio" name="payment-method" value="qris"><span class="payment-icon">▦</span><span><b>QRIS</b><small>Scan QRIS Xendit setelah pesanan dibuat</small></span><i>✓</i></label>
+            </div>
+            <div class="transfer-channel-picker" id="transfer-channel-picker">
+                <fieldset><legend>E-wallet</legend><div class="transfer-channel-options">
+                    <label><input type="radio" name="transfer-channel" value="dana" checked><span>DANA</span></label>
+                    <label><input type="radio" name="transfer-channel" value="ovo"><span>OVO</span></label>
+                    <label><input type="radio" name="transfer-channel" value="gopay"><span>GoPay</span></label>
+                </div></fieldset>
+                <fieldset><legend>Bank</legend><div class="transfer-channel-options">
+                    <label><input type="radio" name="transfer-channel" value="bca"><span>BCA</span></label>
+                    <label><input type="radio" name="transfer-channel" value="bri"><span>BRI / BRImo</span></label>
+                    <label><input type="radio" name="transfer-channel" value="mandiri"><span>Mandiri</span></label>
+                    <label><input type="radio" name="transfer-channel" value="bjb"><span>BJB</span></label>
+                    <label><input type="radio" name="transfer-channel" value="seabank"><span>SeaBank</span></label>
+                </div></fieldset>
             </div></div>
             <div class="payment-section"><span class="payment-section-title">BAYAR LANGSUNG</span><div class="payment-options">
                 <label class="payment-option"><input type="radio" name="payment-method" value="tunai"><span class="payment-icon">Rp</span><span><b>Tunai</b><small>Bayar langsung ke kasir</small></span><i>✓</i></label>
@@ -196,20 +211,22 @@
                 document.querySelector('#success-order').textContent = order.no_pesanan;
                 document.querySelector('#track-order').href = body.dataset.status.replace('__ORDER__', encodeURIComponent(order.no_pesanan));
                 document.querySelector('#success-title').textContent = payment.metode === 'tunai' ? 'Pesanan diterima.' : 'Selesaikan pembayaranmu.';
-                document.querySelector('#success-description').textContent = payment.metode === 'tunai' ? 'Silakan bayar ke kasir. Pesanan diproses setelah pembayaran dikonfirmasi.' : payment.metode === 'qris' ? 'Pembayaran QRIS akan diverifikasi otomatis oleh Xendit. Kasir melanjutkan pesanan setelah pembayaran berhasil.' : 'Tunjukkan bukti transfer ke kasir agar pembayaran dapat dikonfirmasi dan diproses.';
+                document.querySelector('#success-description').textContent = payment.metode === 'tunai' ? 'Silakan bayar ke kasir. Pesanan diproses setelah pembayaran dikonfirmasi.' : payment.metode === 'qris' ? 'Bayar dengan QRIS. Status pesanan akan diperbarui setelah pembayaran terverifikasi oleh Xendit.' : 'Setelah transfer, beri tahu kasir agar pembayaran dapat dikonfirmasi dan pesanan diproses.';
                 const instructionBox = document.querySelector('#manual-payment-instructions');
                 instructionBox.hidden = payment.metode === 'tunai'; instructionBox.replaceChildren();
                 if (payment.metode === 'bank_transfer') {
-                    const title = document.createElement('b'); title.textContent = 'Transfer ke rekening berikut';
-                    const details = document.createElement('p'); details.textContent = `${payment.instructions.bank} · ${payment.instructions.account} · a.n. ${payment.instructions.account_name}`;
+                    const title = document.createElement('b'); title.textContent = 'Metode transfer pilihanmu';
+                    const channelNames = {dana:'DANA',ovo:'OVO',gopay:'GoPay',bca:'BCA',bri:'BRI / BRImo',mandiri:'Mandiri',bjb:'BJB',seabank:'SeaBank'};
+                    const channel = document.createElement('small'); channel.textContent = `Transfer melalui ${channelNames[payment.instructions.channel] || payment.instructions.channel || 'pilihanmu'}`;
                     const amount = document.createElement('strong'); amount.textContent = document.querySelector('#payment-total').textContent;
-                    const note = document.createElement('small'); note.textContent = 'Setelah transfer, tunjukkan bukti pembayaran ke kasir untuk dikonfirmasi.';
-                    instructionBox.append(title, details, amount, note);
+                    const note = document.createElement('small'); note.textContent = 'Minta tujuan transfer kepada kasir. Setelah membayar, beri tahu kasir untuk mengonfirmasi pembayaran.';
+                    instructionBox.append(title, channel, amount, note);
                 } else if (payment.metode === 'qris') {
-                    const title = document.createElement('b'); title.textContent = 'Scan QRIS untuk membayar';
-                    const image = document.createElement('img'); image.src = payment.instructions.image; image.alt = 'QRIS merchant';
+                    const title = document.createElement('b'); title.textContent = 'Bayar dengan QRIS';
+                    const image = document.createElement('img'); image.src = payment.instructions.image; image.alt = 'QRIS untuk pesanan ini';
+                    const download = document.createElement('a'); download.href = payment.instructions.download; download.target = '_blank'; download.rel = 'noopener'; download.textContent = 'Buka atau unduh QR';
                     const note = document.createElement('small'); note.textContent = 'Pindai QR ini dari aplikasi pembayaran yang mendukung QRIS.';
-                    instructionBox.append(title, image, note);
+                    instructionBox.append(title, image, download, note);
                     if (payment.sandbox) {
                         const actions = document.createElement('div'); actions.className = 'qris-demo-actions';
                         const scannerLink = document.createElement('a'); scannerLink.href = body.dataset.qrisSimulator; scannerLink.target = '_blank'; scannerLink.rel = 'noopener'; scannerLink.className = 'qris-action qris-action-secondary'; scannerLink.textContent = 'Buka pemindai QR';
@@ -249,6 +266,9 @@
             document.querySelector('#checkout-button').addEventListener('click', () => { renderReview(); review.hidden = false; paymentStep.hidden = true; dialog.showModal(); });
             document.querySelector('#continue-payment').addEventListener('click', () => { review.hidden = true; paymentStep.hidden = false; });
             document.querySelector('#back-to-review').addEventListener('click', () => { paymentStep.hidden = true; review.hidden = false; });
+            document.querySelectorAll('[name="payment-method"]').forEach(input => input.addEventListener('change', () => {
+                document.querySelector('#transfer-channel-picker').hidden = document.querySelector('[name="payment-method"]:checked')?.value !== 'bank_transfer';
+            }));
             document.querySelector('#place-order').addEventListener('click', async event => {
                 const button = event.currentTarget, error = document.querySelector('#checkout-error');
                 const method = document.querySelector('[name="payment-method"]:checked')?.value;
@@ -264,7 +284,7 @@
                     if (!checkout.ok) throw new Error(Object.values(order.errors || {}).flat()[0] || order.message || 'Pesanan belum dapat diproses.');
                     const payment = await fetch(body.dataset.payment, {
                         method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                        body: JSON.stringify({ no_pesanan: order.no_pesanan, metode_pembayaran: method })
+                        body: JSON.stringify({ no_pesanan: order.no_pesanan, metode_pembayaran: method, kanal_pembayaran: method === 'bank_transfer' ? document.querySelector('[name="transfer-channel"]:checked')?.value : null })
                     });
                     const result = await payment.json();
                     if (!payment.ok) throw new Error(result.message || 'Pembayaran belum dapat diproses.');

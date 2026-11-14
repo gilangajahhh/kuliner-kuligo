@@ -131,7 +131,7 @@
                         <div class="board-card-total"><span>Total pesanan</span><b>Rp
                                 {{ number_format($order->total_harga, 0, ',', '.') }}</b></div>
                         <div class="board-card-actions"><a href="{{ route('kasir.pesanan.show', $order) }}">Detail</a>
-                            <form method="POST" action="{{ route('kasir.pesanan.status', $order) }}">@csrf<input type="hidden"
+                            <form method="POST" action="{{ route('kasir.pesanan.status', $order) }}" class="finish-order-form" data-order="{{ $order->no_pesanan }}" data-customer="{{ $order->nama_pelanggan ?: 'Meja ' . $order->meja->nomor_meja }}" data-total="Rp {{ number_format($order->total_harga, 0, ',', '.') }}" data-method="{{ strtoupper(str_replace('_', ' ', $order->pembayaran?->metode_pembayaran ?? 'Belum dibayar')) }}" data-receipt="{{ route('kasir.pesanan.struk', $order) }}">@csrf<input type="hidden"
                                     name="status" value="selesai"><button class="finish-button" type="submit">Selesaikan
                                     ✓</button></form>
                         </div>
@@ -139,9 +139,27 @@
             </div>
         </section>
     </div>
+    <section class="panel recent-panel completed-orders-panel">
+        <div class="panel-heading"><div><h2>Pesanan Selesai</h2><p>Cetak struk langsung tanpa membuka detail pesanan.</p></div><span class="count-pill">{{ $pesananSelesai->count() }} terbaru</span></div>
+        <div class="table-wrap"><table><thead><tr><th>No. Pesanan</th><th>Meja / Pelanggan</th><th>Selesai</th><th>Total</th><th>Pembayaran</th><th>Aksi</th></tr></thead><tbody>
+            @forelse($pesananSelesai as $order)
+                <tr><td><b>#{{ $order->no_pesanan }}</b></td><td>{{ $order->meja->nomor_meja }} · {{ $order->nama_pelanggan ?: 'Pelanggan' }}</td><td>{{ $order->updated_at?->format('d/m/Y H:i') }}</td><td><b>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</b></td><td>{{ strtoupper(str_replace('_', ' ', $order->pembayaran?->metode_pembayaran ?? '—')) }}</td><td><a class="button button-dark" href="{{ route('kasir.pesanan.struk', $order) }}?cetak=1" target="_blank" rel="noopener">Cetak Struk</a></td></tr>
+            @empty <tr><td colspan="6">Belum ada pesanan selesai.</td></tr> @endforelse
+        </tbody></table></div>
+    </section>
     <div class="board-note"><span class="online-dot"></span> Status pesanan menggunakan data terbaru dari transaksi
         pelanggan <a href="{{ route('kasir.dashboard') }}">Kembali ke dashboard →</a></div>
+    <dialog class="table-edit-dialog receipt-dialog" id="finish-receipt-dialog"><div class="table-edit-heading"><div><span class="cashier-kicker">PEMBAYARAN SELESAI</span><h2>Pesanan Selesai</h2><p>Pesanan sudah ditandai selesai. Pilih cara memberikan struk.</p></div><button class="dialog-close" type="button" id="close-receipt-dialog">&times;</button></div><div class="receipt-dialog-body"><div class="receipt-summary"><div><small>No. pesanan</small><b id="receipt-order"></b></div><div><small>Pelanggan / meja</small><b id="receipt-customer"></b></div><div><small>Metode pembayaran</small><b id="receipt-method"></b></div><div class="receipt-grand"><small>Total pembayaran</small><b id="receipt-total"></b></div></div><div class="printer-status"><span><i></i> Kasir: Siap untuk cetak browser</span><span><i></i> Dapur: tiket dapur manual</span></div><div class="receipt-actions"><button class="button button-dark" id="print-cashier">Cetak Struk Kasir</button><button class="button button-light" id="print-kitchen">Cetak Struk Dapur</button></div><div class="digital-receipt"><label class="field">Tautan e-receipt<input id="receipt-link" readonly></label><img id="receipt-qr" alt="QR e-receipt"><div class="digital-share"><input id="receipt-contact" placeholder="Nomor WhatsApp atau email"><button class="button button-light" id="share-receipt" type="button">Bagikan</button></div></div><div id="receipt-error" role="alert"></div><div class="table-edit-actions receipt-close-actions"><button class="button button-light" id="finish-without-print" type="button">Selesai (Tanpa Struk)</button><a class="button button-dark" href="{{ route('kasir.pesanan') }}">Tutup &amp; Pesanan Baru</a></div></div></dialog>
     <script>
+        (() => {
+            const dialog=document.querySelector('#finish-receipt-dialog');let receiptUrl='';
+            document.querySelectorAll('.finish-order-form').forEach(form=>form.addEventListener('submit',async event=>{event.preventDefault();const submit=form.querySelector('button');submit.disabled=true;const data=new FormData(form);data.set('status','selesai');try{const response=await fetch(form.action,{method:'POST',headers:{'X-CSRF-TOKEN':form.querySelector('[name=_token]').value,'Accept':'application/json'},body:data});const result=await response.json();if(!response.ok)throw new Error(result.message||'Pesanan gagal diselesaikan.');receiptUrl=result.receipt_url||form.dataset.receipt;document.querySelector('#receipt-order').textContent='#'+form.dataset.order;document.querySelector('#receipt-customer').textContent=form.dataset.customer;document.querySelector('#receipt-total').textContent=form.dataset.total;document.querySelector('#receipt-method').textContent=form.dataset.method;document.querySelector('#receipt-link').value=receiptUrl;document.querySelector('#receipt-qr').src='https://api.qrserver.com/v1/create-qr-code/?size=120x120&data='+encodeURIComponent(receiptUrl);dialog.showModal()}catch(error){alert(error.message);submit.disabled=false}}));
+            const print=(type)=>{if(!receiptUrl)return;const url=new URL(receiptUrl,location.href);if(type==='cashier')url.searchParams.set('cetak','1');else url.searchParams.set('jenis','dapur');const popup=window.open(url,'_blank','noopener');if(!popup)document.querySelector('#receipt-error').innerHTML='Jendela cetak terblokir. <a target="_blank" rel="noopener" href="'+url.toString()+'">Buka struk / Simpan PDF</a>.'};
+            document.querySelector('#print-cashier').onclick=()=>print('cashier');document.querySelector('#print-kitchen').onclick=()=>print('kitchen');
+            document.querySelector('#share-receipt').onclick=()=>{const contact=document.querySelector('#receipt-contact').value.trim();const text=`E-receipt pesanan: ${receiptUrl}`;if(contact.includes('@')){location.href=`mailto:${encodeURIComponent(contact)}?subject=${encodeURIComponent('E-receipt Kuligo')}&body=${encodeURIComponent(text)}`}else if(contact){const phone=contact.replace(/\D/g,'');window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`,'_blank','noopener')}else{navigator.clipboard?.writeText(receiptUrl);document.querySelector('#receipt-error').textContent='Tautan struk disalin.'}};
+            dialog.addEventListener('close',()=>location.reload());
+            document.querySelector('#close-receipt-dialog').onclick=()=>dialog.close();document.querySelector('#finish-without-print').onclick=()=>dialog.close();
+        })();
         (() => {
             const body = document.querySelector('#cashier-table-status');
             const message = document.querySelector('#table-action-message');

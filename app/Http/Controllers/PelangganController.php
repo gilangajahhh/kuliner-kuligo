@@ -19,11 +19,22 @@ class PelangganController extends Controller
     public function index(string $kode_qr)
     {
         $meja = Meja::where('kode_qr', $kode_qr)->firstOrFail();
+        session(['customer_menu_kode_qr' => $meja->kode_qr]);
         $kategori = KategoriMenu::with(['menu' => function ($q) {
             $q->where('status_tersedia', true)->where('stok', '>', 0)->with('varian');
         }])->orderBy('urutan_tampil')->get();
 
         return view('pelanggan.menu', compact('meja', 'kategori'));
+    }
+
+    public function menuAwal()
+    {
+        $meja = Meja::where('kode_qr', session('customer_menu_kode_qr'))->first();
+        $meja ??= Meja::orderBy('nomor_meja')->first();
+
+        abort_if(! $meja, 404, 'Menu pelanggan belum tersedia.');
+
+        return redirect()->route('menu.index', $meja->kode_qr);
     }
 
     public function checkout(Request $request, string $kode_qr)
@@ -131,21 +142,22 @@ class PelangganController extends Controller
         $data = $request->validate([
             'no_pesanan' => 'required|exists:pesanan,no_pesanan',
             'metode_pembayaran' => 'required|in:qris,bank_transfer,tunai',
+            'kanal_pembayaran' => 'required_if:metode_pembayaran,bank_transfer|nullable|in:dana,ovo,gopay,bca,bri,mandiri,bjb,seabank',
         ]);
 
         $pesanan = Pesanan::where('no_pesanan', $data['no_pesanan'])
             ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
             ->firstOrFail();
 
-        if ($data['metode_pembayaran'] === 'bank_transfer'
-            && (! config('payments.bank.name') || ! config('payments.bank.account') || ! config('payments.bank.account_name'))) {
-            return response()->json(['message' => 'Rekening tujuan transfer belum diatur di .env (PAYMENT_BANK_NAME, PAYMENT_BANK_ACCOUNT, PAYMENT_BANK_ACCOUNT_NAME).'], 503);
-        }
         if ($data['metode_pembayaran'] === 'qris' && ! config('services.xendit.secret_key')) {
             return response()->json(['message' => 'Xendit belum siap. Isi XENDIT_SECRET_KEY di .env lalu jalankan php artisan config:clear.'], 503);
         }
 
-        $kanal = $data['metode_pembayaran'] === 'qris' ? 'xendit' : null;
+        $kanal = match ($data['metode_pembayaran']) {
+            'qris' => 'xendit',
+            'bank_transfer' => $data['kanal_pembayaran'],
+            default => null,
+        };
         $pembayaran = DB::transaction(function () use ($pesanan, $data, $kanal) {
             $pesanan = Pesanan::whereKey($pesanan->getKey())->lockForUpdate()->firstOrFail();
             $existing = Pembayaran::where('id_pesanan', $pesanan->id_pesanan)->first();
@@ -208,9 +220,7 @@ class PelangganController extends Controller
             'metode' => $pembayaran->metode_pembayaran,
             'instructions' => match ($pembayaran->metode_pembayaran) {
                 'bank_transfer' => [
-                    'bank' => config('payments.bank.name'),
-                    'account' => config('payments.bank.account'),
-                    'account_name' => config('payments.bank.account_name'),
+                    'channel' => $pembayaran->kanal_pembayaran,
                 ],
                 default => null,
             },
@@ -416,7 +426,6 @@ class PelangganController extends Controller
             default => null,
         };
 
-        // Acknowledge unrelated Xendit events without changing payment records.
         if ($incomingStatus === null) {
             return response()->json(['status' => 'ignored']);
         }
@@ -480,8 +489,6 @@ class PelangganController extends Controller
 
         DB::transaction(function () use ($payment, $incomingStatus) {
             $locked = Pembayaran::whereKey($payment->getKey())->lockForUpdate()->firstOrFail();
-
-            // A delayed expiry/failure event must never downgrade a captured payment.
             if ($locked->status_pembayaran !== 'berhasil' || $incomingStatus === 'berhasil') {
                 $locked->update([
                     'status_pembayaran' => $incomingStatus,
@@ -501,5 +508,17 @@ class PelangganController extends Controller
             ->firstOrFail();
 
         return view('pelanggan.status', compact('pesanan'));
+    }
+
+    public function strukPelanggan(string $kode_qr, string $no_pesanan)
+    {
+        $pesanan = Pesanan::with('meja', 'detail.menu', 'detail.varian', 'pembayaran')
+            ->where('no_pesanan', $no_pesanan)
+            ->whereHas('meja', fn ($query) => $query->where('kode_qr', $kode_qr))
+            ->firstOrFail();
+
+        abort_unless($pesanan->pembayaran?->status_pembayaran === 'berhasil', 404);
+
+        return view('pelanggan.struk', compact('pesanan'));
     }
 }
