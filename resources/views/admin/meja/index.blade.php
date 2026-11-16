@@ -38,13 +38,14 @@
                 </thead>
                 <tbody>
                     @forelse($meja as $item)
+                        @php $menuUrl = rtrim(config('app.url'), '/') . route('menu.index', ['kode_qr' => $item->kode_qr], false); @endphp
                         <tr>
                             <td><b>{{ $item->nomor_meja }}</b></td>
                             <td><span class="category-tag">{{ ucfirst($item->status_meja) }}</span></td>
                             <td><span class="category-tag">{{ $item->kode_qr }}</span></td>
                             <td>{{ $item->pesanan_count }} pesanan</td>
-                            <td><a href="{{ route('menu.index', $item->kode_qr) }}" target="_blank" rel="noopener">Buka menu</a></td>
-                            <td><a class="button button-light" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&amp;data={{ urlencode(route('menu.index', $item->kode_qr)) }}" target="_blank" rel="noopener">Buka / cetak</a></td>
+                            <td><a href="{{ $menuUrl }}" target="_blank" rel="noopener">Buka menu</a></td>
+                            <td><a class="button button-light" href="https://api.qrserver.com/v1/create-qr-code/?size=500x500&amp;data={{ urlencode($menuUrl) }}" target="_blank" rel="noopener">Buka / cetak</a></td>
                             <td>
                                 <div class="table-actions">
                                     @if($item->status_meja === 'terisi')

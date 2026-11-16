@@ -17,7 +17,7 @@ class DashboardController extends Controller
                 ->sum('total_harga'),
             'pesanan_aktif' => Pesanan::whereIn('status_pesanan', ['baru', 'diproses', 'siap_diantar'])->count(),
             'total_menu' => Menu::count(),
-            'menu_tidak_tersedia' => Menu::where('status_tersedia', false)->count(),
+            'menu_tidak_tersedia' => Menu::whereRaw('status_tersedia IS FALSE')->count(),
         ];
 
         $pesananTerbaru = Pesanan::with('meja')

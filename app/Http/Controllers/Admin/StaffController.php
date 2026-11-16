@@ -74,7 +74,7 @@ class StaffController extends Controller
             && ($data['role'] !== 'admin' || ! $isActive);
 
         if ($removingAdminAccess && ! User::where('role', 'admin')
-            ->where('status_aktif', true)
+            ->whereRaw('status_aktif IS TRUE')
             ->where('id_user', '<>', $user->getKey())
             ->exists()) {
             return back()->withErrors(['akun' => 'Admin aktif terakhir tidak dapat dinonaktifkan atau diubah perannya.']);
@@ -103,7 +103,7 @@ class StaffController extends Controller
         }
 
         if ($user->role === 'admin' && $user->status_aktif
-            && ! User::where('role', 'admin')->where('status_aktif', true)
+            && ! User::where('role', 'admin')->whereRaw('status_aktif IS TRUE')
                 ->where('id_user', '<>', $user->getKey())->exists()) {
             return back()->withErrors(['akun' => 'Admin aktif terakhir tidak dapat dinonaktifkan.']);
         }

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id('id_pembayaran');
             $table->foreignId('id_pesanan')->constrained('pesanan', 'id_pesanan')->cascadeOnDelete();
             // kartu_debit dipertahankan untuk data lama; pelanggan baru memilih tunai.
-            $table->enum('metode_pembayaran', ['qris', 'e_wallet', 'kartu_debit', 'kartu_kredit', 'tunai']);
+            $table->enum('metode_pembayaran', ['qris', 'e_wallet', 'tunai']);
             $table->decimal('jumlah_bayar', 12, 2);
             $table->enum('status_pembayaran', ['pending', 'berhasil', 'gagal'])->default('pending');
             $table->string('kode_transaksi_gateway')->nullable();

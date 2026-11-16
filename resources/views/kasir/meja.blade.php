@@ -2,14 +2,13 @@
 @section('title', 'Manajemen Meja')
 @section('content')
 <div class="breadcrumb">KULIGO POS / <b>MANAJEMEN MEJA</b></div>
-<div class="page-heading cashier-heading"><div><span class="cashier-kicker">AREA PELANGGAN</span><h1>Manajemen Meja</h1><p>Pantau ketersediaan meja dan pesanan aktif.</p></div><button class="button button-dark" type="button" onclick="document.getElementById('add-table-dialog').showModal()">＋ Tambah Meja Baru</button></div>
+<div class="page-heading cashier-heading"><div><span class="cashier-kicker">MEJA RESTORAN</span><h1>Meja</h1><p>Lihat meja kosong dan pesanan aktif.</p></div><button class="button button-dark" type="button" onclick="document.getElementById('add-table-dialog').showModal()">＋ Tambah meja</button></div>
 @php
     $aktif = $meja->where('status_meja', 'terisi');
     $terisi = $aktif->count();
     $kosong = $meja->count() - $terisi;
-    $reservasi = 0; // Skema saat ini belum memiliki status reservasi.
 @endphp
-<section class="table-summary"><article><small>Total Meja</small><b>{{ $meja->count() }}</b><span>semua area</span></article><article class="occupied"><small>Meja Terisi</small><b>{{ $terisi }}</b><span>pesanan aktif</span></article><article class="available"><small>Meja Kosong</small><b>{{ $kosong }}</b><span>siap digunakan</span></article><article class="reserved"><small>Meja Reservasi</small><b>{{ $reservasi }}</b><span>fitur reservasi belum aktif</span></article></section>
+<section class="table-summary"><article><small>Total Meja</small><b>{{ $meja->count() }}</b><span>semua area</span></article><article class="occupied"><small>Meja Terisi</small><b>{{ $terisi }}</b><span>pesanan aktif</span></article><article class="available"><small>Meja Kosong</small><b>{{ $kosong }}</b><span>siap digunakan</span></article></section>
 <section class="panel table-management-panel"><div class="table-zone-tabs" id="table-zone-tabs"><button class="active" data-zone="semua">Semua <b>{{ $meja->count() }}</b></button><button data-zone="lantai-1">Lantai 1</button><button data-zone="lantai-2">Lantai 2</button><button data-zone="outdoor">Outdoor</button><span class="zone-note">Area mengikuti nama meja (contoh: “Outdoor 01”)</span></div>
 <div class="table-card-grid" id="table-card-grid">
 @forelse($meja as $item)
@@ -21,8 +20,8 @@
     <article class="managed-table-card {{ $order ? 'is-occupied' : 'is-available' }}" data-zone="{{ $zone }}" data-table="{{ $item->id_meja }}">
         <div class="managed-card-head"><div><small>MEJA</small><h2>{{ $item->nomor_meja }}</h2></div><span class="table-state {{ $order ? 'state-occupied' : 'state-available' }}"><i></i>{{ $order ? 'Terisi' : 'Kosong' }}</span></div>
         @if($order)
-            <div class="managed-order-info"><div><small>Pesanan aktif</small><b>#{{ $order->no_pesanan }}</b></div><div><small>Mulai</small><b>{{ $order->waktu_pesan?->format('H:i') }} · {{ $order->waktu_pesan?->diffForHumans(null, true) }}</b></div><div><small>Pelanggan</small><b>{{ $order->nama_pelanggan ?: 'Pelanggan' }}</b></div><div><small>Jumlah tamu</small><b>Belum dicatat</b></div><div><small>Item</small><b>{{ $order->detail_count }} item</b></div><div class="managed-bill"><small>Total berjalan</small><b>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</b></div></div>
-            <div class="managed-card-actions"><a class="button button-light" href="{{ route('kasir.pesanan.show', $order) }}">Lihat Pesanan</a><button class="button button-light move-table" type="button" data-url="{{ route('kasir.meja.pindah', $item) }}" data-targets='@json($availableTables)'>Pindah Meja</button><a class="button button-dark" href="{{ route('kasir.pesanan.struk', $order) }}?cetak=1" target="_blank" rel="noopener">Cetak Struk Kasir</a><a class="button button-light" href="{{ route('kasir.pesanan.struk', $order) }}?jenis=dapur" target="_blank" rel="noopener">Cetak Struk Dapur</a></div>
+            <div class="managed-order-info"><div><small>Pesanan</small><b>#{{ $order->no_pesanan }}</b></div><div><small>Waktu</small><b>{{ $order->waktu_pesan?->format('H:i') }} · {{ $order->waktu_pesan?->diffForHumans(null, true) }}</b></div><div><small>Pelanggan</small><b>{{ $order->nama_pelanggan ?: 'Pelanggan' }}</b></div><div><small>Item</small><b>{{ $order->detail_count }} menu</b></div><div class="managed-bill"><small>Total</small><b>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</b></div></div>
+            <div class="managed-card-actions"><a class="button button-light" href="{{ route('kasir.pesanan') }}">Antrean pesanan</a><button class="button button-light move-table" type="button" data-url="{{ route('kasir.meja.pindah', $item) }}" data-targets='@json($availableTables)'>Pindah meja</button><details class="table-print-options"><summary>Struk (opsional)</summary><div><a class="button button-dark" href="{{ route('kasir.pesanan.struk', $order) }}?cetak=1" target="_blank" rel="noopener">Struk kasir</a><a class="button button-light" href="{{ route('kasir.pesanan.struk', $order) }}?jenis=dapur" target="_blank" rel="noopener">Tiket dapur</a></div></details></div>
         @else
             <div class="managed-empty"><span>✓</span><b>Meja siap digunakan</b><small>Kode QR: {{ $item->kode_qr }}</small></div>
         @endif

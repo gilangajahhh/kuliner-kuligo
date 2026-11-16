@@ -4,8 +4,8 @@
 <div class="breadcrumb">KULIGO POS / <b>DASHBOARD</b></div>
 <div class="page-heading cashier-heading">
     <div><span class="cashier-kicker">RINGKASAN OPERASIONAL</span>
-        <h1>Dashboard Utama</h1>
-        <p>Selamat bertugas, {{ auth()->user()->nama }}. Berikut aktivitas restoran hari ini.</p>
+        <h1>Ringkasan Kasir</h1>
+        <p>Aktivitas restoran hari ini, {{ auth()->user()->nama }}.</p>
     </div><span class="cashier-date">{{ now()->translatedFormat('l, d M Y') }}</span>
 </div>
 
@@ -42,21 +42,15 @@
         </div>
         <div class="chart-foot"><i></i> Penjualan tercatat dari seluruh pesanan selain yang dibatalkan</div>
     </section>
-    <section class="panel cashier-quick-panel">
+    <section class="panel cashier-quick-panel cashier-quick-simple">
         <div class="cashier-panel-title">
             <div>
-                <h2>Pantau antrean</h2>
-                <p>Akses cepat aktivitas kasir</p>
+                <h2>Perlu diproses</h2>
+                <p>{{ $ringkasan['pesanan_masuk'] }} pesanan menunggu kasir</p>
             </div>
-        </div><a class="quick-action" href="{{ route('kasir.pesanan') }}"><span
-                class="quick-icon">▤</span><span><b>Pesanan masuk</b><small>{{ $ringkasan['pesanan_masuk'] }} pesanan
-                    menunggu</small></span><strong>→</strong></a><a class="quick-action"
-            href="{{ route('kasir.pesanan') }}#diproses"><span class="quick-icon">◷</span><span><b>Pesanan
-                    diproses</b><small>Lihat antrean dapur</small></span><strong>→</strong></a><a class="quick-action"
-            href="{{ route('kasir.pesanan') }}#siap-diantar"><span class="quick-icon">✓</span><span><b>Siap
-                    diantar</b><small>Lihat pesanan siap</small></span><strong>→</strong></a><a
-            class="button button-dark quick-board" href="{{ route('kasir.pesanan') }}">Buka papan pesanan
-            <span>→</span></a>
+        </div>
+        <a class="button button-dark quick-board" href="{{ route('kasir.pesanan') }}">Buka daftar pesanan <span>→</span></a>
+        <a class="quick-action" href="{{ route('kasir.meja.index') }}"><span class="quick-icon">▦</span><span><b>Kelola meja</b><small>Lihat meja kosong dan terisi</small></span><strong>→</strong></a>
     </section>
 </div>
 
@@ -88,7 +82,7 @@
                     <td><span
                             class="queue-status {{ $order->status_pesanan === 'selesai' ? 'done' : ($order->status_pesanan === 'batal' ? 'cancelled' : '') }}">{{ ucfirst(str_replace('_', ' ', $order->status_pesanan)) }}</span>
                     </td>
-                    <td><a class="button button-light" href="{{ route('kasir.pesanan.show', $order) }}">Detail</a></td>
+                    <td><a class="button button-light" href="{{ route('kasir.pesanan.struk', $order) }}?cetak=1" target="_blank" rel="noopener">Cetak struk</a></td>
             </tr>@empty<tr>
                     <td colspan="6">
                         <div class="empty-state"><b>Belum ada pesanan</b><small>Pesanan pelanggan akan muncul di

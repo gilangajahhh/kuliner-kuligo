@@ -11,6 +11,7 @@ use App\Http\Controllers\HealthController;
 
 Route::get('/health', [HealthController::class, 'index'])->name('health');
 Route::post('/xendit/webhook', [PelangganController::class, 'xenditWebhook'])->name('xendit.webhook');
+Route::post('/midtrans/webhook', [PelangganController::class, 'midtransWebhook'])->name('midtrans.webhook');
 Route::get('/simulator-qris', [PelangganController::class, 'simulatorQris'])->name('qris.simulator');
 Route::post('/simulator-qris/scan', [PelangganController::class, 'simulatorQrisScan'])->name('qris.simulator.scan');
 Route::get('/', function () {
@@ -30,6 +31,7 @@ Route::get('/', function () {
 */
 Route::prefix('menu/{kode_qr}')->group(function () {
     Route::get('/', [PelangganController::class, 'index'])->name('menu.index');
+    Route::get('/stok/{id_menu}', [PelangganController::class, 'cekStok'])->name('menu.stok');
     Route::post('/checkout', [PelangganController::class, 'checkout'])->name('menu.checkout');
     Route::post('/bayar', [PelangganController::class, 'bayar'])->name('menu.bayar');
     Route::post('/status/{no_pesanan}/simulate-payment', [PelangganController::class, 'simulasiPembayaranXendit'])->name('menu.simulate-payment');
@@ -56,6 +58,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
     Route::get('/pesanan', [AdminDashboard::class, 'index'])->name('pesanan');
     Route::resource('menu', MenuController::class)->except(['show']);
+    Route::patch('/menu/{menu}/availability', [MenuController::class, 'availability'])->name('menu.availability');
     Route::get('/meja', [AdminMeja::class, 'index'])->name('meja.index');
     Route::post('/meja', [AdminMeja::class, 'store'])->name('meja.store');
     Route::put('/meja/{meja}', [AdminMeja::class, 'update'])->name('meja.update');
@@ -88,7 +91,6 @@ Route::middleware(['auth', 'role:admin,kasir'])->prefix('kasir')->name('kasir.')
     Route::delete('/meja/{meja}', [KasirPesanan::class, 'hapusMeja'])->name('meja.destroy');
     Route::post('/meja/{meja}/pindah', [KasirPesanan::class, 'pindahMeja'])->name('meja.pindah');
     Route::patch('/meja/{meja}/kosongkan', [KasirPesanan::class, 'kosongkanMeja'])->name('meja.kosongkan');
-    Route::get('/pesanan/{pesanan}', [KasirPesanan::class, 'show'])->name('pesanan.show');
     Route::get('/pesanan/{pesanan}/struk', [KasirPesanan::class, 'struk'])->name('pesanan.struk');
     Route::post('/pesanan/{pesanan}/verifikasi', [KasirPesanan::class, 'verifikasi'])->name('pesanan.verifikasi');
     Route::post('/pesanan/{pesanan}/status', [KasirPesanan::class, 'updateStatus'])->name('pesanan.status');

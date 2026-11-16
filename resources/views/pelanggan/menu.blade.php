@@ -11,19 +11,18 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
 
-    <link rel="stylesheet" href="/css/customer.css?v=menu-image-fallback-20261110">
+    <link rel="stylesheet" href="/css/customer.css?v=success-actions-spacing-20261117">
     <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
-
-    <link rel="stylesheet" href="/css/customer.css?v=qris-actions-2">
+    @if(config('services.midtrans.client_key'))
+        <script type="text/javascript" src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+    @endif
 
 </head>
 
 <body class="customer-body" data-checkout="{{ route('menu.checkout', $meja->kode_qr) }}"
+    data-stock-check="{{ route('menu.stok', [$meja->kode_qr, '__MENU__']) }}"
     data-payment="{{ route('menu.bayar', $meja->kode_qr) }}"
 
-
-    data-simulate="{{ route('menu.simulate-payment', ['kode_qr' => $meja->kode_qr, 'no_pesanan' => '__ORDER__']) }}"
-    data-qris-simulator="{{ route('qris.simulator') }}"
 
     data-status="{{ route('menu.status', [$meja->kode_qr, '__ORDER__']) }}">
     <header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark"><img
@@ -33,6 +32,7 @@
             onclick="document.querySelector('#cart').scrollIntoView({behavior:'smooth'})"><span>Keranjang</span><b
                 id="header-count">0</b></button>
     </header>
+    <div id="stock-notice" class="stock-notice" role="alert" aria-live="assertive" hidden></div>
     <main class="customer-main">
         <section class="welcome-row">
             <div><span class="eyebrow">SELAMAT DATANG DI KULIGO</span>
@@ -82,7 +82,7 @@
                                             }
                                         }
                                     @endphp
-                                    <article class="menu-card" data-stock="{{ $item->stok }}"
+                                    <article class="menu-card" data-stock="{{ $item->stok }}" data-available="{{ $item->status_tersedia ? '1' : '0' }}"
                                         data-name="{{ strtolower($item->nama_menu . ' ' . $item->deskripsi) }}"
                                         data-category="{{ $group->id_kategori }}" data-id="{{ $item->id_menu }}"
                                         data-title="{{ $item->nama_menu }}" data-price="{{ $item->harga_dasar }}"
@@ -99,8 +99,7 @@
                                             </div>
                                             <p>{{ $item->deskripsi ?: 'Disiapkan segar oleh dapur Kuligo.' }}</p>
                                             <div class="menu-card-meta"><strong>Rp
-                                                    {{ number_format($item->harga_dasar, 0, ',', '.') }}</strong><small>Tersedia:
-                                                    {{ $item->stok }}</small></div>
+                                                    {{ number_format($item->harga_dasar, 0, ',', '.') }}</strong><small class="{{ $item->status_tersedia && $item->stok > 0 ? '' : 'is-sold-out' }}">{{ $item->status_tersedia && $item->stok > 0 ? 'Tersedia: ' . $item->stok : 'Habis' }}</small></div>
                                         </div>
                                 </article>@endforeach
                             </div>
@@ -152,23 +151,8 @@
             <h2>Pilih pembayaran</h2>
             <p class="dialog-intro">Pilih metode pembayaran untuk pesananmu.</p>
 
-            <div class="payment-section"><span class="payment-section-title">PEMBAYARAN ONLINE MANUAL</span><div class="payment-options">
-                <label class="payment-option"><input type="radio" name="payment-method" value="bank_transfer" checked><span class="payment-icon">▤</span><span><b>Transfer bank / e-wallet</b><small>Pilih tujuan transfer, lalu konfirmasi ke kasir</small></span><i>✓</i></label>
-                <label class="payment-option"><input type="radio" name="payment-method" value="qris"><span class="payment-icon">▦</span><span><b>QRIS</b><small>Scan QRIS merchant setelah pesanan dibuat</small></span><i>✓</i></label>
-            </div>
-            <div class="transfer-channel-picker" id="transfer-channel-picker">
-                <fieldset><legend>E-wallet</legend><div class="transfer-channel-options">
-                    <label><input type="radio" name="transfer-channel" value="dana" checked><span>DANA</span></label>
-                    <label><input type="radio" name="transfer-channel" value="ovo"><span>OVO</span></label>
-                    <label><input type="radio" name="transfer-channel" value="gopay"><span>GoPay</span></label>
-                </div></fieldset>
-                <fieldset><legend>Bank</legend><div class="transfer-channel-options">
-                    <label><input type="radio" name="transfer-channel" value="bca"><span>BCA</span></label>
-                    <label><input type="radio" name="transfer-channel" value="bri"><span>BRI / BRImo</span></label>
-                    <label><input type="radio" name="transfer-channel" value="mandiri"><span>Mandiri</span></label>
-                    <label><input type="radio" name="transfer-channel" value="bjb"><span>BJB</span></label>
-                    <label><input type="radio" name="transfer-channel" value="seabank"><span>SeaBank</span></label>
-                </div></fieldset>
+            <div class="payment-section"><span class="payment-section-title">PEMBAYARAN ONLINE</span><div class="payment-options">
+                <label class="payment-option"><input type="radio" name="payment-method" value="qris" checked><span class="payment-icon">▦</span><span><b>QRIS / Transfer bank</b><small>Pilih QRIS atau bank di pembayaran Midtrans</small></span><i>✓</i></label>
             </div></div>
             <div class="payment-section"><span class="payment-section-title">BAYAR LANGSUNG</span><div class="payment-options">
                 <label class="payment-option"><input type="radio" name="payment-method" value="tunai"><span class="payment-icon">Rp</span><span><b>Tunai</b><small>Bayar langsung ke kasir</small></span><i>✓</i></label>
@@ -181,8 +165,9 @@
             <h2 id="success-title">Pesanan diterima.</h2>
             <p id="success-description">Simpan nomor pesanan ini untuk mengecek status pembayaran dan pesanan.</p>
             <div class="order-number"><span>Nomor pesanan</span><b id="success-order"></b></div>
-            <div id="manual-payment-instructions" class="manual-payment-instructions" hidden></div><a
-                class="checkout-button" id="track-order" href="#">Lihat status pesanan <span>→</span></a>
+            <div id="manual-payment-instructions" class="manual-payment-instructions" hidden></div>
+            <div class="success-actions"><button id="start-snap-payment" class="checkout-button" type="button" hidden>Bayar via Midtrans <span>→</span></button><a
+                    class="checkout-button" id="track-order" href="#">Lihat status pesanan <span>→</span></a></div>
         </div>
     </dialog>
     <dialog id="variant-dialog" class="checkout-dialog variant-dialog" aria-labelledby="variant-title">
@@ -198,13 +183,33 @@
     </dialog>
     <script>
         (() => {
-            const body = document.body, cart = new Map(), items = document.querySelector('#cart-items'), money = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(n), cards = [...document.querySelectorAll('.menu-card')]; let activeCategory = 'all', checkoutIdempotencyKey = null;
+            const body = document.body, cart = new Map(), items = document.querySelector('#cart-items'), money = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(n), cards = [...document.querySelectorAll('.menu-card')]; let activeCategory = 'all', checkoutIdempotencyKey = null, checkoutIdempotencyFingerprint = null;
             const checkoutStorageKey = `kuligo:checkout:${location.pathname}`;
-            function getCheckoutIdempotencyKey() { if (checkoutIdempotencyKey) return checkoutIdempotencyKey; checkoutIdempotencyKey = sessionStorage.getItem(checkoutStorageKey); if (!checkoutIdempotencyKey) { checkoutIdempotencyKey = window.crypto?.randomUUID ? window.crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, char => { const random = Math.random() * 16 | 0; return (char === 'x' ? random : random & 3 | 8).toString(16) }); sessionStorage.setItem(checkoutStorageKey, checkoutIdempotencyKey); } return checkoutIdempotencyKey; }
+            function checkoutRequestPayload() { return { nama_pelanggan: document.querySelector('#customer-name').value.trim() || null, items: [...cart.values()].map(line => ({ id_menu: line.id, id_varian: line.variant, jumlah: line.quantity })) }; }
+            function getCheckoutIdempotencyKey(payload) {
+                const fingerprint = JSON.stringify(payload);
+                if (checkoutIdempotencyKey && checkoutIdempotencyFingerprint === fingerprint) return checkoutIdempotencyKey;
+                let saved = null;
+                try { saved = JSON.parse(sessionStorage.getItem(checkoutStorageKey) || 'null'); } catch {}
+                if (saved?.fingerprint === fingerprint && saved?.key) checkoutIdempotencyKey = saved.key;
+                else {
+                    checkoutIdempotencyKey = window.crypto?.randomUUID ? window.crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, char => { const random = Math.random() * 16 | 0; return (char === 'x' ? random : random & 3 | 8).toString(16) });
+                    sessionStorage.setItem(checkoutStorageKey, JSON.stringify({ key: checkoutIdempotencyKey, fingerprint }));
+                }
+                checkoutIdempotencyFingerprint = fingerprint;
+                return checkoutIdempotencyKey;
+            }
+            function sendCheckout(payload, idempotencyKey) {
+                return fetch(body.dataset.checkout, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: JSON.stringify({ idempotency_key: idempotencyKey, ...payload })
+                });
+            }
             function quantityInCart(menuId) { return [...cart.values()].filter(line => line.id === String(menuId)).reduce((sum, line) => sum + line.quantity, 0) }
-            function render() { let count = 0, total = 0; items.innerHTML = ''; if (!cart.size) { items.innerHTML = '<div class="cart-empty"><span>🧺</span><p>Keranjangmu masih kosong.<br>Yuk, pilih menu favorit!</p></div>' } for (const [key, line] of cart) { const quantity = line.quantity, price = Number(line.price), sum = price * quantity; count += quantity; total += sum; const row = document.createElement('div'); row.className = 'cart-line'; row.innerHTML = `<div class="cart-line-copy"><b>${line.title}</b><small>${line.variantName || 'Reguler'} · ${money(sum)}</small></div><div class="quantity-control"><button type="button" data-action="minus" data-key="${key}" aria-label="Kurangi">−</button><b>${quantity}</b><button type="button" data-action="plus" data-key="${key}" aria-label="Tambah" ${quantityInCart(line.id) >= line.stock ? 'disabled' : ''}>+</button></div>`; items.append(row) } cards.forEach(card => { const remaining = Math.max(0, Number(card.dataset.stock) - quantityInCart(card.dataset.id)); card.querySelector('.menu-card-meta small').textContent = `Tersedia: ${remaining}`; card.querySelector('.add-button').disabled = remaining === 0 }); document.querySelector('#cart-count').textContent = `${count} item`; document.querySelector('#header-count').textContent = count; document.querySelector('#cart-subtotal').textContent = money(total); document.querySelector('#dialog-total').textContent = money(total); document.querySelector('#payment-total').textContent = money(total); document.querySelector('#checkout-button').disabled = !count }
-            function add(card, variant = null) { const variants = JSON.parse(card.dataset.variants || '[]'), id = variant?.id || variants[0]?.id || '', name = variant?.name || variants[0]?.name || '', price = Number(card.dataset.price) + (Number(variant?.price ?? variants[0]?.price) || 0), key = `${card.dataset.id}-${id}`, stock = Number(card.dataset.stock); if (quantityInCart(card.dataset.id) >= stock) return; if (cart.has(key)) cart.get(key).quantity++; else cart.set(key, { id: card.dataset.id, title: card.dataset.title, price, variant: id || null, variantName: name, quantity: 1, stock }); render() }
-            const variantDialog = document.querySelector('#variant-dialog'), variantOptions = document.querySelector('#variant-options'), variantTitle = document.querySelector('#variant-title'), addVariantButton = document.querySelector('#add-selected-variant'); let pendingVariantCard = null, selectedVariant = null; function chooseVariant(card, variants) { pendingVariantCard = card; selectedVariant = null; variantTitle.textContent = card.dataset.title; variantOptions.innerHTML = ''; addVariantButton.disabled = true; variants.forEach((variant, index) => { const option = document.createElement('button'); option.type = 'button'; option.className = 'variant-choice'; option.setAttribute('aria-pressed', 'false'); const price = Number(variant.price) || 0; const label = document.createElement('span'); const name = document.createElement('b'); name.textContent = variant.name; const detail = document.createElement('small'); detail.textContent = price ? `Tambahan ${money(price)}` : 'Tanpa biaya tambahan'; label.append(name, detail); const check = document.createElement('i'); check.textContent = '✓'; option.append(label, check); option.addEventListener('click', () => { selectedVariant = variant; variantOptions.querySelectorAll('.variant-choice').forEach(choice => { const active = choice === option; choice.classList.toggle('selected', active); choice.setAttribute('aria-pressed', String(active)) }); addVariantButton.disabled = false }); variantOptions.append(option) }); variantDialog.showModal() } cards.forEach(card => { card.querySelector('.add-button').addEventListener('click', () => { const variants = JSON.parse(card.dataset.variants || '[]'); if (variants.length > 1) chooseVariant(card, variants); else add(card, variants[0] || null) }) }); addVariantButton.addEventListener('click', () => { if (!pendingVariantCard || !selectedVariant) return; add(pendingVariantCard, selectedVariant); variantDialog.close(); pendingVariantCard = null; selectedVariant = null }); items.addEventListener('click', event => { const button = event.target.closest('button[data-action]'); if (!button) return; const line = cart.get(button.dataset.key); if (button.dataset.action === 'plus') { if (quantityInCart(line.id) < line.stock) line.quantity++ } else line.quantity--; if (line.quantity < 1) cart.delete(button.dataset.key); render() });
+            function render() { let count = 0, total = 0; items.innerHTML = ''; if (!cart.size) { items.innerHTML = '<div class="cart-empty"><span>🧺</span><p>Keranjangmu masih kosong.<br>Yuk, pilih menu favorit!</p></div>' } for (const [key, line] of cart) { const quantity = line.quantity, price = Number(line.price), sum = price * quantity; count += quantity; total += sum; const row = document.createElement('div'); row.className = 'cart-line'; row.innerHTML = `<div class="cart-line-copy"><b>${line.title}</b><small>${line.variantName || 'Reguler'} · ${money(sum)}</small></div><div class="quantity-control"><button type="button" data-action="minus" data-key="${key}" aria-label="Kurangi">−</button><b>${quantity}</b><button type="button" data-action="plus" data-key="${key}" aria-label="Tambah" ${quantityInCart(line.id) >= line.stock ? 'disabled' : ''}>+</button></div>`; items.append(row) } cards.forEach(card => { const remaining = Math.max(0, Number(card.dataset.stock) - quantityInCart(card.dataset.id)), available = card.dataset.available !== '0' && remaining > 0, stockLabel = card.querySelector('.menu-card-meta small'); stockLabel.textContent = available ? `Tersedia: ${remaining}` : 'Habis'; stockLabel.classList.toggle('is-sold-out', !available); card.querySelector('.add-button').disabled = false; card.querySelector('.add-button').classList.toggle('is-sold-out', !available) }); document.querySelector('#cart-count').textContent = `${count} item`; document.querySelector('#header-count').textContent = count; document.querySelector('#cart-subtotal').textContent = money(total); document.querySelector('#dialog-total').textContent = money(total); document.querySelector('#payment-total').textContent = money(total); document.querySelector('#checkout-button').disabled = !count }
+            let stockNoticeTimer; function showStockNotice(message) { const notice = document.querySelector('#stock-notice'); notice.textContent = message; notice.hidden = false; clearTimeout(stockNoticeTimer); stockNoticeTimer = setTimeout(() => { notice.hidden = true }, 4500) }
+            function add(card, variant = null) { const variants = JSON.parse(card.dataset.variants || '[]'), id = variant?.id || variants[0]?.id || '', name = variant?.name || variants[0]?.name || '', price = Number(card.dataset.price) + (Number(variant?.price ?? variants[0]?.price) || 0), key = `${card.dataset.id}-${id}`, stock = Number(card.dataset.stock); if (card.dataset.available === '0' || stock < 1) { showStockNotice(`${card.dataset.title} sedang habis dan tidak bisa dipesan.`); return } if (quantityInCart(card.dataset.id) >= stock) { showStockNotice('stok habis!!'); return } if (cart.has(key)) cart.get(key).quantity++; else cart.set(key, { id: card.dataset.id, title: card.dataset.title, price, variant: id || null, variantName: name, quantity: 1, stock }); render(); fetch(body.dataset.stockCheck.replace('__MENU__', encodeURIComponent(card.dataset.id)), { headers: { 'Accept': 'application/json' }, cache: 'no-store' }).then(response => { if (!response.ok) throw new Error(); return response.json() }).then(live => { card.dataset.stock = Math.max(0, Number(live.stok) || 0); card.dataset.available = live.tersedia ? '1' : '0'; if (!live.tersedia || Number(live.stok) < 1) { const line = cart.get(key); if (line) { line.quantity--; if (line.quantity < 1) cart.delete(key) } render(); showStockNotice(`${live.nama_menu || card.dataset.title} sedang habis dan tidak bisa dipesan.`) } else { render() } }).catch(() => {}); }
+            const variantDialog = document.querySelector('#variant-dialog'), variantOptions = document.querySelector('#variant-options'), variantTitle = document.querySelector('#variant-title'), addVariantButton = document.querySelector('#add-selected-variant'); let pendingVariantCard = null, selectedVariant = null; function chooseVariant(card, variants) { pendingVariantCard = card; selectedVariant = null; variantTitle.textContent = card.dataset.title; variantOptions.innerHTML = ''; addVariantButton.disabled = true; variants.forEach((variant, index) => { const option = document.createElement('button'); option.type = 'button'; option.className = 'variant-choice'; option.setAttribute('aria-pressed', 'false'); const price = Number(variant.price) || 0; const label = document.createElement('span'); const name = document.createElement('b'); name.textContent = variant.name; const detail = document.createElement('small'); detail.textContent = price ? `Tambahan ${money(price)}` : 'Tanpa biaya tambahan'; label.append(name, detail); const check = document.createElement('i'); check.textContent = '✓'; option.append(label, check); option.addEventListener('click', () => { selectedVariant = variant; variantOptions.querySelectorAll('.variant-choice').forEach(choice => { const active = choice === option; choice.classList.toggle('selected', active); choice.setAttribute('aria-pressed', String(active)) }); addVariantButton.disabled = false }); variantOptions.append(option) }); variantDialog.showModal() } cards.forEach(card => { card.querySelector('.add-button').addEventListener('click', () => { const variants = JSON.parse(card.dataset.variants || '[]'); if (variants.length > 1) chooseVariant(card, variants); else add(card, variants[0] || null) }) }); addVariantButton.addEventListener('click', async () => { if (!pendingVariantCard || !selectedVariant) return; addVariantButton.disabled = true; await add(pendingVariantCard, selectedVariant); variantDialog.close(); pendingVariantCard = null; selectedVariant = null }); items.addEventListener('click', event => { const button = event.target.closest('button[data-action]'); if (!button) return; const line = cart.get(button.dataset.key); if (button.dataset.action === 'plus') { if (quantityInCart(line.id) < line.stock) line.quantity++ } else line.quantity--; if (line.quantity < 1) cart.delete(button.dataset.key); render() });
             function filter() { const query = document.querySelector('#menu-search').value.trim().toLocaleLowerCase('id'); cards.forEach(card => card.hidden = !(activeCategory === 'all' || card.dataset.category === activeCategory) || !card.dataset.name.includes(query)); document.querySelectorAll('.menu-group').forEach(group => group.hidden = !group.querySelector('.menu-card:not([hidden])')) } document.querySelector('#menu-search').addEventListener('input', filter); document.querySelectorAll('.category-tab').forEach(tab => tab.addEventListener('click', () => { activeCategory = tab.dataset.category; document.querySelectorAll('.category-tab').forEach(other => other.classList.toggle('active', other === tab)); filter() }));
             const dialog = document.querySelector('#checkout-dialog'), review = document.querySelector('#review-step'), paymentStep = document.querySelector('#checkout-step'), reviewItems = document.querySelector('#review-items');
             function renderReview() {
@@ -217,14 +222,27 @@
             }
             function showOrderConfirmation(order, payment, quantities) {
                 paymentStep.hidden = true; document.querySelector('#success-step').hidden = false;
-                // Show the server-calculated amount, which is the same amount sent to Xendit.
                 document.querySelector('#payment-total').textContent = money(Number(order.total_harga));
                 document.querySelector('#success-order').textContent = order.no_pesanan;
                 document.querySelector('#track-order').href = body.dataset.status.replace('__ORDER__', encodeURIComponent(order.no_pesanan));
                 document.querySelector('#success-title').textContent = payment.metode === 'tunai' ? 'Pesanan diterima.' : 'Selesaikan pembayaranmu.';
-                document.querySelector('#success-description').textContent = payment.metode === 'tunai' ? 'Silakan bayar ke kasir. Pesanan diproses setelah pembayaran dikonfirmasi.' : payment.metode === 'qris' ? 'Pembayaran QRIS akan diverifikasi otomatis oleh Xendit. Kasir melanjutkan pesanan setelah pembayaran berhasil.' : 'Setelah transfer, beri tahu kasir agar pembayaran dapat dikonfirmasi dan pesanan diproses.';
+                document.querySelector('#success-description').textContent = payment.metode === 'tunai' ? 'Silakan bayar ke kasir. Pesanan diproses setelah pembayaran dikonfirmasi.' : payment.metode === 'qris' ? 'Pilih QRIS atau transfer bank di halaman Midtrans. Status pembayaran akan diperbarui otomatis.' : 'Setelah transfer, beri tahu kasir agar pembayaran dapat dikonfirmasi dan pesanan diproses.';
                 const instructionBox = document.querySelector('#manual-payment-instructions');
                 instructionBox.hidden = payment.metode === 'tunai'; instructionBox.replaceChildren();
+                const snapButton = document.querySelector('#start-snap-payment');
+                snapButton.hidden = payment.metode !== 'qris';
+                snapButton.onclick = payment.metode === 'qris' ? () => {
+                    if (!window.snap || !payment.instructions.snap_token) {
+                        document.querySelector('#success-description').textContent = 'Pembayaran belum dapat dibuka. Muat ulang halaman menu dan coba kembali.';
+                        return;
+                    }
+                    window.snap.pay(payment.instructions.snap_token, {
+                        onSuccess: () => { window.location.href = document.querySelector('#track-order').href; },
+                        onPending: () => { window.location.href = document.querySelector('#track-order').href; },
+                        onError: () => { document.querySelector('#success-description').textContent = 'Pembayaran belum berhasil. Kamu bisa mencoba lagi dengan tombol di bawah.'; },
+                        onClose: () => { document.querySelector('#success-description').textContent = 'Jendela pembayaran ditutup. Tekan tombol Bayar QRIS untuk melanjutkan.'; }
+                    });
+                } : null;
                 if (payment.metode === 'bank_transfer') {
                     const title = document.createElement('b'); title.textContent = 'Metode transfer pilihanmu';
                     const channelNames = {dana:'DANA',ovo:'OVO',gopay:'GoPay',bca:'BCA',bri:'BRI / BRImo',mandiri:'Mandiri',bjb:'BJB',seabank:'SeaBank'};
@@ -233,57 +251,16 @@
                     const note = document.createElement('small'); note.textContent = 'Minta tujuan transfer kepada kasir. Setelah membayar, beri tahu kasir untuk mengonfirmasi pembayaran.';
                     instructionBox.append(title, channel, amount, note);
                 } else if (payment.metode === 'qris') {
-                    const title = document.createElement('b'); title.textContent = 'Scan QRIS untuk membayar';
-                    const image = document.createElement('img'); image.src = payment.instructions.image; image.alt = 'QRIS merchant';
-
-                    const download = document.createElement('a'); download.href = payment.instructions.download; download.target = '_blank'; download.rel = 'noopener'; download.textContent = 'Buka atau unduh QR';
-                    const note = document.createElement('small'); note.textContent = 'Pindai QR ini dari aplikasi pembayaran yang mendukung QRIS.';
-                    instructionBox.append(title, image, download, note);
-                    if (payment.sandbox) {
-                        const actions = document.createElement('div'); actions.className = 'qris-demo-actions';
-                        const scannerLink = document.createElement('a'); scannerLink.href = body.dataset.qrisSimulator; scannerLink.target = '_blank'; scannerLink.rel = 'noopener'; scannerLink.className = 'qris-action qris-action-secondary'; scannerLink.textContent = 'Buka pemindai QR';
-                        const simulate = document.createElement('button'); simulate.type = 'button'; simulate.className = 'qris-action qris-action-primary'; simulate.textContent = 'Simulasikan pembayaran';
-                        const feedback = document.createElement('small'); feedback.className = 'qris-demo-feedback'; feedback.setAttribute('role', 'status');
-                        simulate.addEventListener('click', async () => {
-                            simulate.disabled = true; scannerLink.setAttribute('aria-disabled', 'true'); simulate.textContent = 'Mengirim simulasi…'; feedback.textContent = '';
-                            try {
-                                const response = await fetch(body.dataset.simulate.replace('__ORDER__', encodeURIComponent(order.no_pesanan)), {
-                                    method: 'POST', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
-                                });
-                                const result = await response.json();
-                                if (!response.ok) throw new Error(result.message || 'Simulasi gagal dikirim.');
-                                simulate.textContent = 'Pembayaran tersimulasi ✓'; feedback.textContent = 'Berhasil dikirim. Memperbarui status pesanan…';
-                                window.setTimeout(() => { window.location.href = body.dataset.status.replace('__ORDER__', encodeURIComponent(order.no_pesanan)); }, 2000);
-                            } catch (exception) {
-                                simulate.disabled = false; scannerLink.removeAttribute('aria-disabled'); simulate.textContent = 'Coba simulasi lagi'; feedback.textContent = exception.message; feedback.classList.add('is-error');
-                            }
-                        });
-                        actions.append(scannerLink, simulate); instructionBox.append(actions, feedback);
-                    }
-
-                    if (payment.instructions.expires_at) {
-                        const expiry = document.createElement('small');
-                        const deadline = new Date(payment.instructions.expires_at).getTime();
-                        const updateExpiry = () => {
-                            const remaining = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
-                            image.hidden = remaining === 0;
-                            download.hidden = remaining === 0;
-                            expiry.textContent = remaining > 0
-                                ? `Berlaku ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')} lagi.`
-                                : 'Waktu QR ini telah habis. Silakan hubungi kasir.';
-                        };
-                        updateExpiry(); window.setInterval(updateExpiry, 1000); instructionBox.append(expiry);
-                    }
+                    const title = document.createElement('b'); title.textContent = 'Pembayaran online melalui Midtrans';
+                    const note = document.createElement('small'); note.textContent = 'Pilih QRIS atau transfer bank pada halaman pembayaran Midtrans.';
+                    instructionBox.append(title, note);
                 }
                 cards.forEach(card => { card.dataset.stock = Math.max(0, Number(card.dataset.stock) - (quantities.get(card.dataset.id) || 0)); });
-                cart.clear(); sessionStorage.removeItem(checkoutStorageKey); checkoutIdempotencyKey = null; render();
+                cart.clear(); sessionStorage.removeItem(checkoutStorageKey); checkoutIdempotencyKey = null; checkoutIdempotencyFingerprint = null; render();
             }
             document.querySelector('#checkout-button').addEventListener('click', () => { renderReview(); review.hidden = false; paymentStep.hidden = true; dialog.showModal(); });
             document.querySelector('#continue-payment').addEventListener('click', () => { review.hidden = true; paymentStep.hidden = false; });
             document.querySelector('#back-to-review').addEventListener('click', () => { paymentStep.hidden = true; review.hidden = false; });
-            document.querySelectorAll('[name="payment-method"]').forEach(input => input.addEventListener('change', () => {
-                document.querySelector('#transfer-channel-picker').hidden = document.querySelector('[name="payment-method"]:checked')?.value !== 'bank_transfer';
-            }));
             document.querySelector('#place-order').addEventListener('click', async event => {
                 const button = event.currentTarget, error = document.querySelector('#checkout-error');
                 const method = document.querySelector('[name="payment-method"]:checked')?.value;
@@ -291,15 +268,21 @@
                 for (const line of cart.values()) quantities.set(line.id, (quantities.get(line.id) || 0) + line.quantity);
                 button.disabled = true; button.innerHTML = 'Memproses…'; error.textContent = '';
                 try {
-                    const checkout = await fetch(body.dataset.checkout, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                        body: JSON.stringify({ idempotency_key: getCheckoutIdempotencyKey(), nama_pelanggan: document.querySelector('#customer-name').value, items: [...cart.values()].map(line => ({ id_menu: line.id, id_varian: line.variant, jumlah: line.quantity })) })
-                    });
-                    const order = await checkout.json();
+                    const checkoutPayload = checkoutRequestPayload();
+                    let checkout = await sendCheckout(checkoutPayload, getCheckoutIdempotencyKey(checkoutPayload));
+                    let order = await checkout.json();
+                    if (checkout.status === 409 && order.message === 'Permintaan checkout ini sudah digunakan untuk isi keranjang yang berbeda.') {
+                        // Recover once from a key left behind by an older page/script version.
+                        sessionStorage.removeItem(checkoutStorageKey);
+                        checkoutIdempotencyKey = null;
+                        checkoutIdempotencyFingerprint = null;
+                        checkout = await sendCheckout(checkoutPayload, getCheckoutIdempotencyKey(checkoutPayload));
+                        order = await checkout.json();
+                    }
                     if (!checkout.ok) throw new Error(Object.values(order.errors || {}).flat()[0] || order.message || 'Pesanan belum dapat diproses.');
                     const payment = await fetch(body.dataset.payment, {
                         method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                        body: JSON.stringify({ no_pesanan: order.no_pesanan, metode_pembayaran: method, kanal_pembayaran: method === 'bank_transfer' ? document.querySelector('[name="transfer-channel"]:checked')?.value : null })
+                        body: JSON.stringify({ no_pesanan: order.no_pesanan, metode_pembayaran: method, kanal_pembayaran: null })
                     });
                     const result = await payment.json();
                     if (!payment.ok) throw new Error(result.message || 'Pembayaran belum dapat diproses.');

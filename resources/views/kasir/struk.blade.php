@@ -27,7 +27,7 @@ $waktuBayarWib = $pesanan->pembayaran?->waktu_pembayaran?->copy()->timezone('Asi
 <body>
     <div class="no-print">
         <button type="button" onclick="window.print()">Cetak / Simpan PDF</button>
-        <a href="{{ route('kasir.pesanan.show', $pesanan) }}">Kembali ke pesanan</a>
+        <a href="{{ route('kasir.pesanan') }}">Kembali ke daftar pesanan</a>
     </div>
     <main class="receipt">
         @if(request('jenis') === 'dapur')

@@ -8,8 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/customer.css?v=xendit-qris-1">
-    <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
+    <link rel="stylesheet" href="/css/customer.css?v=status-payment-panel-20261117">
+    <link rel="stylesheet" href="/css/payment-options.css?v=status-payment-panel-20261117">
+    @if($pesanan->pembayaran?->kanal_pembayaran === 'midtrans' && $pesanan->pembayaran?->status_pembayaran === 'pending' && config('services.midtrans.client_key'))
+        <script type="text/javascript" src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+    @endif
 </head>
 
 <body class="customer-body">
@@ -32,7 +35,7 @@
                             sistem kami</small></span></div>
                 <div
                     class="timeline-step {{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? 'done' : '' }}">
-                    <i>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? '✓' : '2' }}</i><span><b>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? 'Sedang disiapkan' : ($pesanan->pembayaran?->kanal_pembayaran === 'xendit' ? 'Menunggu pembayaran terverifikasi otomatis' : 'Menunggu konfirmasi pembayaran oleh kasir') }}</b><small>{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) . ' · ' . ucfirst($pesanan->pembayaran->status_pembayaran) : 'Pembayaran akan diperiksa oleh kasir' }}</small></span>
+                    <i>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? '✓' : '2' }}</i><span><b>{{ in_array($pesanan->status_pesanan, ['diproses', 'siap_diantar', 'selesai']) ? 'Sedang disiapkan' : (in_array($pesanan->pembayaran?->kanal_pembayaran, ['xendit', 'midtrans']) ? 'Menunggu pembayaran terverifikasi otomatis' : 'Menunggu konfirmasi pembayaran oleh kasir') }}</b><small>{{ $pesanan->pembayaran ? strtoupper(str_replace('_', ' ', $pesanan->pembayaran->metode_pembayaran)) . ' · ' . ucfirst($pesanan->pembayaran->status_pembayaran) : 'Pembayaran akan diperiksa oleh kasir' }}</small></span>
                 </div>
                 <div
                     class="timeline-step {{ in_array($pesanan->status_pesanan, ['siap_diantar', 'selesai']) ? 'done' : '' }}">
@@ -40,7 +43,7 @@
             </div>
             @if($pesanan->status_pesanan !== 'batal' && $pesanan->pembayaran?->status_pembayaran === 'pending' && in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']))
                 <div class="manual-payment-instructions status-payment-instructions">
-                    @if($pesanan->pembayaran->metode_pembayaran === 'bank_transfer')
+                    @if($pesanan->pembayaran->metode_pembayaran === 'bank_transfer' && $pesanan->pembayaran->kanal_pembayaran !== 'midtrans')
                         @php $transferLabels = ['dana' => 'DANA', 'ovo' => 'OVO', 'gopay' => 'GoPay', 'bca' => 'BCA', 'bri' => 'BRI / BRImo', 'mandiri' => 'Mandiri', 'bjb' => 'BJB', 'seabank' => 'SeaBank']; @endphp
                         <b>Transfer melalui {{ $transferLabels[$pesanan->pembayaran->kanal_pembayaran] ?? $pesanan->pembayaran->kanal_pembayaran }}</b>
                         <p>Total transfer: Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}. Minta tujuan transfer kepada kasir.</p>
@@ -58,12 +61,30 @@
                     @elseif($pesanan->pembayaran->kanal_pembayaran === 'xendit' && $pesanan->pembayaran->qris_string)
                         <b>QRIS sudah kedaluwarsa</b>
                         <p>Minta kasir membuat QRIS baru sebelum melanjutkan pembayaran.</p>
+                    @elseif($pesanan->pembayaran->kanal_pembayaran === 'midtrans' && $pesanan->pembayaran->snap_token)
+                        <div class="midtrans-payment-panel">
+                            <span class="midtrans-payment-badge"><i></i> Menunggu pembayaran</span>
+                            <div class="midtrans-payment-copy">
+                                <b>Lanjutkan pembayaran online</b>
+                                <p>Pilih QRIS atau transfer bank di halaman aman Midtrans.</p>
+                            </div>
+                            <div class="midtrans-payment-amount">
+                                <span>Total pembayaran</span>
+                                <strong>Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}</strong>
+                            </div>
+                            <button class="qris-action qris-action-primary midtrans-payment-button" type="button" id="resume-midtrans-payment" data-token="{{ $pesanan->pembayaran->snap_token }}">
+                                <span id="resume-midtrans-label" aria-live="polite">Bayar via Midtrans</span><span aria-hidden="true">→</span>
+                            </button>
+                            <small class="midtrans-payment-note">Status pembayaran diperbarui otomatis setelah Midtrans mengirim notifikasi.</small>
+                        </div>
                     @else
                         <b>QRIS belum tersedia</b>
                         <p>Silakan hubungi kasir untuk bantuan.</p>
                     @endif
-                    <strong>Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}</strong>
-                    <small>{{ $pesanan->pembayaran->kanal_pembayaran === 'xendit' ? 'Status pembayaran diperbarui otomatis setelah Xendit mengirim notifikasi.' : 'Beri tahu kasir setelah transfer. Kasir dapat langsung mengonfirmasi pembayaran.' }}</small>
+                    @if($pesanan->pembayaran->kanal_pembayaran !== 'midtrans')
+                        <strong>Rp {{ number_format($pesanan->pembayaran->jumlah_bayar, 0, ',', '.') }}</strong>
+                        <small>{{ $pesanan->pembayaran->kanal_pembayaran === 'xendit' ? 'Status pembayaran diperbarui otomatis setelah penyedia pembayaran mengirim notifikasi.' : 'Beri tahu kasir setelah transfer. Kasir dapat langsung mengonfirmasi pembayaran.' }}</small>
+                    @endif
                 </div>
             @endif
             <div class="order-lines">
@@ -83,7 +104,36 @@
     </footer>
     @if(in_array($pesanan->pembayaran?->metode_pembayaran, ['qris', 'bank_transfer']) && $pesanan->pembayaran?->status_pembayaran === 'pending')
         <script>
-            const refreshTimer = window.setInterval(() => window.location.reload(), 5000);
+            const resumePaymentButton = document.querySelector('#resume-midtrans-payment');
+            let snapCheckoutOpen = false;
+            resumePaymentButton?.addEventListener('click', () => {
+                const label = document.querySelector('#resume-midtrans-label');
+                if (!window.snap) {
+                    if (label) label.textContent = 'Pembayaran belum siap';
+                    return;
+                }
+
+                resumePaymentButton.disabled = true;
+                snapCheckoutOpen = true;
+                if (label) label.textContent = 'Membuka pembayaran…';
+                window.snap.pay(resumePaymentButton.dataset.token, {
+                    onSuccess: () => { snapCheckoutOpen = false; window.location.reload(); },
+                    onPending: () => { snapCheckoutOpen = false; window.location.reload(); },
+                    onError: () => {
+                        snapCheckoutOpen = false;
+                        resumePaymentButton.disabled = false;
+                        if (label) label.textContent = 'Coba bayar lagi';
+                    },
+                    onClose: () => {
+                        snapCheckoutOpen = false;
+                        resumePaymentButton.disabled = false;
+                        if (label) label.textContent = 'Bayar via Midtrans';
+                    },
+                });
+            });
+            const refreshTimer = window.setInterval(() => {
+                if (!snapCheckoutOpen) window.location.reload();
+            }, 5000);
             window.setTimeout(() => window.clearInterval(refreshTimer), 60000);
         </script>
     @endif

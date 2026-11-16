@@ -7,6 +7,7 @@ use App\Http\Requests\FotoMenuRequest;
 use App\Models\KategoriMenu;
 use App\Models\DetailPesanan;
 use App\Models\Menu;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MenuController extends Controller
@@ -116,6 +117,17 @@ class MenuController extends Controller
         });
 
         return redirect()->route('admin.menu.index')->with('success', 'Menu berhasil diperbarui.');
+    }
+
+    public function availability(Request $request, Menu $menu)
+    {
+        $data = $request->validate(['status_tersedia' => 'required|boolean']);
+        $menu->update(['status_tersedia' => $data['status_tersedia']]);
+
+        return redirect()->route('admin.menu.index')->with(
+            'success',
+            $menu->status_tersedia ? 'Menu ditandai tersedia.' : 'Menu ditandai habis.'
+        );
     }
 
     public function destroy(Menu $menu)

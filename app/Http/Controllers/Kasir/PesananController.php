@@ -62,12 +62,6 @@ class PesananController extends Controller
         return view('kasir.dashboard', compact('ringkasan', 'pesananTerbaru', 'grafikMingguan'));
     }
 
-    public function show(Pesanan $pesanan)
-    {
-        $pesanan->load('meja', 'detail.menu', 'detail.varian', 'pembayaran', 'logStatus.user', 'user');
-        return view('kasir.pesanan-detail', compact('pesanan'));
-    }
-
     public function struk(Pesanan $pesanan)
     {
         $pesanan->load('meja', 'detail.menu', 'detail.varian', 'pembayaran', 'user');
@@ -77,12 +71,24 @@ class PesananController extends Controller
 
     public function transaksi()
     {
-        $transaksi = Pesanan::with('meja', 'pembayaran')
+        $metode = in_array(request()->query('metode'), ['semua', 'tunai', 'qris', 'bank_transfer'], true)
+            ? request()->query('metode')
+            : 'semua';
+        $statusPesanan = in_array(request()->query('status_pesanan'), ['semua', 'baru', 'diproses', 'siap_diantar', 'selesai', 'batal'], true)
+            ? request()->query('status_pesanan')
+            : 'semua';
+        $queryTransaksi = Pesanan::with('meja', 'pembayaran')
             ->whereHas('pembayaran')
-            ->latest('waktu_pesan')
+            ->when(in_array($metode, ['tunai', 'qris', 'bank_transfer'], true), function ($query) use ($metode) {
+                $query->whereHas('pembayaran', fn ($pembayaran) => $pembayaran->where('metode_pembayaran', $metode));
+            })
+            ->when(in_array($statusPesanan, ['baru', 'diproses', 'siap_diantar', 'selesai', 'batal'], true), fn ($query) => $query->where('status_pesanan', $statusPesanan));
+
+        $ringkasanTransaksi = (clone $queryTransaksi)->selectRaw('COUNT(*) as jumlah, COALESCE(SUM(total_harga), 0) as total')->first();
+        $transaksi = $queryTransaksi->latest('waktu_pesan')
             ->paginate(15);
 
-        return view('kasir.transaksi', compact('transaksi'));
+        return view('kasir.transaksi', compact('transaksi', 'metode', 'statusPesanan', 'ringkasanTransaksi'));
     }
 
     public function statusMeja()

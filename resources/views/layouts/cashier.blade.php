@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/cashier.css') }}?v=brand-white-20261109">
+    <link rel="stylesheet" href="{{ asset('css/cashier.css') }}?v=simple-cashier-pages-20261116">
     @if(file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
     @vite(['resources/css/app.css', 'resources/js/app.js']) @endif
 </head>
@@ -19,14 +19,14 @@
     <aside class="sidebar"><a class="brand" href="{{ route('kasir.dashboard') }}"><span class="brand-mark"><img
                     src="{{ asset('images/kuligo-food-mark.png') }}" alt=""></span><span><b>kuligo</b><small>RESTO
                     POS</small></span></a>
-        <div class="side-caption">MENU KASIR</div>
+        <div class="side-caption">KASIR</div>
         <nav class="side-nav"><a class="{{ request()->routeIs('kasir.dashboard') ? 'active' : '' }}"
-                href="{{ route('kasir.dashboard') }}"><span>▦</span>Dashboard</a><a
+                href="{{ route('kasir.dashboard') }}"><span>▦</span>Ringkasan</a><a
                 class="{{ request()->routeIs('kasir.pesanan') || request()->routeIs('kasir.pesanan.*') ? 'active' : '' }}"
                 href="{{ route('kasir.pesanan') }}"><span>▤</span>Pesanan</a><a
-                class="{{ request()->routeIs('kasir.meja.*') ? 'active' : '' }}" href="{{ route('kasir.meja.index') }}"><span>▦</span>Manajemen Meja</a><a
+                class="{{ request()->routeIs('kasir.meja.*') ? 'active' : '' }}" href="{{ route('kasir.meja.index') }}"><span>▦</span>Meja</a><a
                 class="{{ request()->routeIs('kasir.transaksi') ? 'active' : '' }}"
-                href="{{ route('kasir.transaksi') }}"><span>▧</span>Transaksi</a></nav>
+                href="{{ route('kasir.transaksi') }}"><span>▧</span>Riwayat pembayaran</a></nav>
         <div class="side-bottom">
             <div class="staff-chip"><span
                     class="avatar">{{ strtoupper(substr(auth()->user()->nama, 0, 1)) }}</span><span><b>{{ auth()->user()->nama }}</b><small>Kasir</small></span>
@@ -40,7 +40,7 @@
             <div class="system-status">Panel Kasir</div>
             <div class="top-actions"><span>{{ auth()->user()->nama }}</span></div>
         </header>
-        <div class="content">@if(session('success'))
+        <div class="content cashier-content">@if(session('success'))
         <div class="notice-success">{{ session('success') }}</div>@endif @if($errors->any())
             <div class="notice-error">{{ $errors->first() }}</div>@endif @yield('content')
         </div>

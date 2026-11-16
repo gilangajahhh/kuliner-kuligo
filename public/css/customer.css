@@ -374,6 +374,17 @@ input {
     line-height: 1;
     cursor: pointer;
 }
+.add-button.is-sold-out {
+    background: #fff0ee;
+    color: #b84538;
+}
+.menu-card-meta small {
+    color: var(--muted);
+}
+.menu-card-meta small.is-sold-out {
+    color: #b84538;
+    font-weight: 700;
+}
 .cart-panel {
     background: #fff;
     border: 1px solid var(--line);
@@ -488,6 +499,9 @@ input {
     font-weight: 700;
     cursor: pointer;
     transition: background 0.2s;
+}
+.checkout-button[hidden] {
+    display: none !important;
 }
 .checkout-button:hover {
     background: var(--olive-dark);
@@ -648,6 +662,34 @@ input {
     font-size: 11px;
     color: #a33;
     margin: 10px 0 0;
+    padding: 10px 12px;
+    border: 1px solid #f0c9c5;
+    border-radius: 7px;
+    background: #fff3f1;
+    line-height: 1.5;
+}
+.checkout-error:empty {
+    display: none;
+}
+.stock-notice {
+    position: fixed;
+    z-index: 1000;
+    top: 92px;
+    left: 50%;
+    width: min(440px, calc(100vw - 32px));
+    padding: 14px 18px;
+    transform: translateX(-50%);
+    border: 1px solid #f0c9c5;
+    border-radius: 10px;
+    background: #fff3f1;
+    box-shadow: 0 12px 35px rgb(20 28 44 / 14%);
+    color: #9d3329;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.45;
+}
+.stock-notice[hidden] {
+    display: none;
 }
 .success-step {
     text-align: center;
@@ -684,6 +726,10 @@ input {
 .order-number b {
     font-size: 14px;
     letter-spacing: 0.6px;
+}
+.success-actions {
+    display: grid;
+    gap: 12px;
 }
 .status-page {
     max-width: 650px;

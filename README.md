@@ -7,7 +7,7 @@
     <img alt="Laravel 12" src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white">
     <img alt="PHP 8.2+" src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white">
     <img alt="PostgreSQL" src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white">
-    <img alt="Xendit" src="https://img.shields.io/badge/QRIS-Xendit-13B5EA?style=for-the-badge">
+    <img alt="Midtrans" src="https://img.shields.io/badge/Payments-Midtrans-00A5CF?style=for-the-badge">
   </p>
 </div>
 
@@ -20,7 +20,7 @@ Kuligo Resto dibuat untuk merapikan alur pemesanan di restoran. Pelanggan membuk
 ### Fitur utama
 
 - **Menu per meja** — pelanggan melihat menu, memilih varian, dan membuat pesanan dengan memindai QR meja.
-- **Pembayaran** — mendukung QRIS Xendit, transfer yang dikonfirmasi kasir, dan pembayaran tunai.
+- **Pembayaran** — mendukung QRIS dan transfer bank melalui Midtrans Snap, serta tunai yang dibayar langsung ke kasir.
 - **Panel kasir** — memantau pesanan dan transaksi, mengonfirmasi pembayaran, serta memperbarui status pesanan.
 - **Panel admin** — mengelola menu, kategori, meja, staf, dan laporan.
 - **Status dan struk** — pelanggan dapat mengecek perkembangan pesanan dan membuka bukti pembayaran.
@@ -30,7 +30,7 @@ Kuligo Resto dibuat untuk merapikan alur pemesanan di restoran. Pelanggan membuk
 - **Frontend:** Blade, CSS, JavaScript, Tailwind CSS, Vite.
 - **Backend:** PHP 8.2+ dan Laravel 12 dengan pola MVC.
 - **Database:** PostgreSQL.
-- **Pembayaran:** Xendit Payments API untuk QRIS; status diperbarui melalui webhook.
+- **Pembayaran:** Midtrans Snap untuk QRIS dan transfer bank; status diperbarui melalui webhook. Tunai tetap dicatat dan dikonfirmasi kasir.
 - **Akses:** autentikasi Laravel dan pembatasan peran admin/kasir.
 
 ```mermaid
@@ -38,8 +38,8 @@ flowchart LR
     Customer["Pelanggan · QR meja"] --> App["Kuligo Resto · Laravel"]
     Staff["Admin & Kasir"] --> App
     App <--> DB[("PostgreSQL")]
-    App -->|Buat QRIS| Xendit["Xendit"]
-    Xendit -->|Webhook /xendit/webhook| App
+    App -->|Buat transaksi QRIS| Midtrans["Midtrans Snap"]
+    Midtrans -->|Webhook /midtrans/webhook| App
 ```
 
 ## 🚀 3. Instalasi Lokal
@@ -80,19 +80,24 @@ Atur variabel berikut di `.env`:
 
 | Variabel | Kegunaan |
 | --- | --- |
-| `APP_URL` | Alamat aplikasi; gunakan URL publik HTTPS untuk webhook Xendit. |
+| `APP_URL` | Alamat aplikasi; gunakan URL publik HTTPS agar webhook Midtrans dapat mengakses aplikasi. |
 | `DB_CONNECTION` | Gunakan `pgsql` untuk PostgreSQL. |
 | `DB_HOST`, `DB_PORT` | Host dan port database. |
 | `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Nama database dan kredensial koneksi. |
 | `DB_SSLMODE` | Mode SSL database bila diwajibkan penyedia database. |
-| `XENDIT_SECRET_KEY` | Secret API Xendit untuk membuat QRIS. |
-| `XENDIT_WEBHOOK_TOKEN` | Token untuk memverifikasi callback Xendit. |
+| `MIDTRANS_SERVER_KEY` | Secret key Midtrans untuk membuat Snap Token. Jaga kerahasiaannya. |
+| `MIDTRANS_CLIENT_KEY` | Client key Midtrans untuk Snap.js di halaman pelanggan. |
+| `MIDTRANS_IS_PRODUCTION` | `false` untuk Sandbox; ubah ke `true` untuk Production. |
 
 Jangan masukkan nilai rahasia ke Git atau README.
 
-## 💳 5. Pembayaran QRIS Xendit
 
-Atur callback pembayaran di dashboard Xendit ke `https://alamat-aplikasi/xendit/webhook`, lalu isi `XENDIT_WEBHOOK_TOKEN` dengan token callback yang sama. Gunakan Secret Key test mode untuk mencoba alur pembayaran dan simulasi QRIS.
+
+## 💳 5. Pembayaran QRIS Midtrans
+
+Untuk uji coba, gunakan pasangan kredensial Sandbox dari **Settings → Access Keys → General Credentials → Payment**. Key Sandbox berawalan `SB-Mid-`; atur `MIDTRANS_IS_PRODUCTION=false`, lalu jalankan `php artisan config:clear`. Jangan mencampur key Sandbox dan Production. Di Snap Preferences, aktifkan kanal QRIS dan transfer bank yang ingin digunakan. Pembayaran tunai tetap langsung dibayar ke kasir tanpa membuka Snap.
+
+Atur HTTP Notification URL di dashboard Midtrans menjadi `https://alamat-aplikasi/midtrans/webhook`. Endpoint memverifikasi signature dan nominal transaksi sebelum memperbarui status pembayaran. Untuk Production, gunakan key Production dan ubah `MIDTRANS_IS_PRODUCTION=true`.
 
 ## 👥 6. Tim 8086 Crew
 

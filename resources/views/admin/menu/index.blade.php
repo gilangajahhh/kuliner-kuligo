@@ -45,6 +45,14 @@
                             <td>{{ $item->stok }}</td>
                             <td><span
                                     class="status {{ $item->status_tersedia && $item->stok > 0 ? 'status-ok' : 'status-off' }}"><i></i>{{ $item->status_tersedia && $item->stok > 0 ? 'Tersedia' : 'Habis' }}</span>
+                                <form method="POST" action="{{ route('admin.menu.availability', $item) }}" class="availability-toggle-form">
+                                    @csrf @method('PATCH')
+                                    <input type="hidden" name="status_tersedia" value="{{ $item->status_tersedia ? 0 : 1 }}">
+                                    <button class="availability-toggle {{ $item->status_tersedia ? 'is-on' : '' }}" type="submit" aria-label="{{ $item->status_tersedia ? 'Tandai habis' : 'Tandai tersedia' }}">
+                                        <span class="availability-toggle-knob"></span>
+                                    </button>
+                                    <small>{{ $item->status_tersedia ? 'Aktif' : 'Nonaktif' }}</small>
+                                </form>
                             </td>
                             <td class="align-right"><div class="table-actions align-actions">
                                 <a class="button button-light" href="{{ route('admin.menu.edit', $item) }}">✎ Ubah</a>
