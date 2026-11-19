@@ -77,12 +77,15 @@ class PelangganController extends Controller
 
         $data = $request->validate([
             'idempotency_key' => 'required|uuid',
-            'nama_pelanggan' => 'nullable|string|max:100',
+            'nama_pelanggan' => 'required|string|max:100',
             'items' => 'required|array|min:1',
             'items.*.id_menu' => 'required|exists:menu,id_menu',
             'items.*.id_varian' => 'nullable|exists:varian_menu,id_varian',
             'items.*.jumlah' => 'required|integer|min:1',
             'items.*.catatan' => 'nullable|string|max:255',
+        ], [
+            'nama_pelanggan.required' => 'Nama pemesan wajib diisi.',
+            'nama_pelanggan.max' => 'Nama pemesan maksimal 100 karakter.',
         ]);
 
         $fingerprint = hash('sha256', json_encode([

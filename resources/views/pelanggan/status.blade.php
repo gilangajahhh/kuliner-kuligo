@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/css/customer.css?v=status-payment-panel-20261117">
+    <link rel="stylesheet" href="{{ asset('css/app-notifications.css') }}?v=1">
     <link rel="stylesheet" href="/css/payment-options.css?v=status-payment-panel-20261117">
     @if($pesanan->pembayaran?->kanal_pembayaran === 'midtrans' && $pesanan->pembayaran?->status_pembayaran === 'pending' && config('services.midtrans.client_key'))
         <script type="text/javascript" src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
@@ -137,6 +138,7 @@
             window.setTimeout(() => window.clearInterval(refreshTimer), 60000);
         </script>
     @endif
+<script src="{{ asset('js/app-notifications.js') }}" defer></script>
 </body>
 
 </html>

@@ -13,6 +13,8 @@
 
     <link rel="stylesheet" href="/css/customer.css?v=success-actions-spacing-20261117">
     <link rel="stylesheet" href="/css/payment-options.css?v=transfer-layout-20261109">
+    <link rel="stylesheet" href="{{ asset('css/customer-links.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('css/app-notifications.css') }}?v=1">
     @if(config('services.midtrans.client_key'))
         <script type="text/javascript" src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
     @endif
@@ -27,7 +29,7 @@
     data-status="{{ route('menu.status', [$meja->kode_qr, '__ORDER__']) }}">
     <header class="customer-header"><a class="customer-brand" href="#"><span class="brand-mark"><img
                     src="/images/kuligo-food-mark.png" alt=""></span><span>kuligo<small>RESTO</small></span></a>
-        <div class="table-indicator"><span class="live-dot"></span> Meja {{ $meja->nomor_meja }}</div><button
+        <a class="reservation-link" href="{{ route('reservasi.index') }}"><span aria-hidden="true">◷</span> Reservasi Meja <b aria-hidden="true">↗</b></a><div class="table-indicator customer-table-indicator"><span class="live-dot"></span> Meja {{ $meja->nomor_meja }}</div><button
             class="cart-trigger" type="button"
             onclick="document.querySelector('#cart').scrollIntoView({behavior:'smooth'})"><span>Keranjang</span><b
                 id="header-count">0</b></button>
@@ -143,7 +145,7 @@
             <p class="dialog-intro">Pastikan menu dan jumlahnya sudah sesuai sebelum lanjut.</p>
             <div id="review-items" class="review-items"></div>
             <div class="dialog-total"><span>Total pesanan</span><b id="dialog-total">Rp 0</b></div><label
-                class="form-label">Nama pemesan <span>(opsional)</span><input id="customer-name" maxlength="100"
+                class="form-label">Nama pemesan <span class="required-label">(wajib)</span><input id="customer-name" maxlength="100" required aria-required="true"
                     placeholder="Nama kamu"></label><button class="checkout-button" id="continue-payment"
                 type="button">Lanjut ke pembayaran <span>→</span></button>
         </div>
@@ -185,7 +187,7 @@
         (() => {
             const body = document.body, cart = new Map(), items = document.querySelector('#cart-items'), money = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(n), cards = [...document.querySelectorAll('.menu-card')]; let activeCategory = 'all', checkoutIdempotencyKey = null, checkoutIdempotencyFingerprint = null;
             const checkoutStorageKey = `kuligo:checkout:${location.pathname}`;
-            function checkoutRequestPayload() { return { nama_pelanggan: document.querySelector('#customer-name').value.trim() || null, items: [...cart.values()].map(line => ({ id_menu: line.id, id_varian: line.variant, jumlah: line.quantity })) }; }
+            function checkoutRequestPayload() { return { nama_pelanggan: document.querySelector('#customer-name').value.trim(), items: [...cart.values()].map(line => ({ id_menu: line.id, id_varian: line.variant, jumlah: line.quantity })) }; }
             function getCheckoutIdempotencyKey(payload) {
                 const fingerprint = JSON.stringify(payload);
                 if (checkoutIdempotencyKey && checkoutIdempotencyFingerprint === fingerprint) return checkoutIdempotencyKey;
@@ -259,7 +261,7 @@
                 cart.clear(); sessionStorage.removeItem(checkoutStorageKey); checkoutIdempotencyKey = null; checkoutIdempotencyFingerprint = null; render();
             }
             document.querySelector('#checkout-button').addEventListener('click', () => { renderReview(); review.hidden = false; paymentStep.hidden = true; dialog.showModal(); });
-            document.querySelector('#continue-payment').addEventListener('click', () => { review.hidden = true; paymentStep.hidden = false; });
+            document.querySelector('#continue-payment').addEventListener('click', () => { const name = document.querySelector('#customer-name'); if (!name.value.trim()) { window.appNotify?.('Nama pemesan wajib diisi sebelum lanjut ke pembayaran.'); name.focus(); return; } review.hidden = true; paymentStep.hidden = false; });
             document.querySelector('#back-to-review').addEventListener('click', () => { paymentStep.hidden = true; review.hidden = false; });
             document.querySelector('#place-order').addEventListener('click', async event => {
                 const button = event.currentTarget, error = document.querySelector('#checkout-error');
@@ -293,6 +295,7 @@
             });
         })();
     </script>
+<script src="{{ asset('js/app-notifications.js') }}" defer></script>
 </body>
 
 </html>

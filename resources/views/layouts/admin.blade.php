@@ -4,6 +4,9 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Admin') · Kuligo Resto POS</title>
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v=availability-toggle-20261116">
+    <link rel="stylesheet" href="{{ asset('css/admin-dashboard.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('css/admin-meja.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('css/app-notifications.css') }}?v=1">
     <style>.sidebar .brand-mark{background:#fff;border:1px solid #edf0f4;border-radius:9px}</style>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,7 +14,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
 </head>
-<body class="admin-body">
+<body class="admin-body @yield('body-class')">
 <aside class="sidebar">
     <a class="brand" href="{{ route('admin.dashboard') }}"><span class="brand-mark"><img src="{{ asset('images/kuligo-food-mark.png') }}" alt=""></span><span><b>kuligo</b><small>RESTO POS</small></span></a>
     <div class="side-caption">MENU UTAMA</div>
@@ -20,7 +23,6 @@
         <a class="{{ request()->routeIs('admin.pesanan') ? 'active' : '' }}" href="{{ route('admin.pesanan') }}"><span>▤</span>Pesanan</a>
         <a class="{{ request()->routeIs('admin.menu.*') ? 'active' : '' }}" href="{{ route('admin.menu.index') }}"><span>⚒</span>Kelola Menu</a>
         <a class="{{ request()->routeIs('admin.meja.*') ? 'active' : '' }}" href="{{ route('admin.meja.index') }}"><span>▦</span>Meja &amp; QR</a>
-        <a class="{{ request()->routeIs('admin.laporan') ? 'active' : '' }}" href="{{ route('admin.laporan') }}"><span>▥</span>Laporan Penjualan</a>
         <a class="{{ request()->routeIs('admin.staff.*') ? 'active' : '' }}" href="{{ route('admin.staff.index') }}"><span>♙</span>Kelola Akun</a>
     </nav>
     <div class="side-bottom"><div class="staff-chip"><span class="avatar">{{ strtoupper(substr(auth()->user()->nama ?? 'A', 0, 1)) }}</span><span><b>{{ auth()->user()->nama ?? 'Admin' }}</b><small>{{ ucfirst(auth()->user()->role ?? 'admin') }}</small></span></div>
@@ -47,4 +49,5 @@
 </dialog>
 <div class="global-loading" id="global-loading" role="status" aria-live="polite" hidden><span class="loading-spinner" aria-hidden="true"></span><span>Memproses permintaan…</span></div>
 <script src="{{ asset('js/admin.js') }}" defer></script>
+<script src="{{ asset('js/app-notifications.js') }}" defer></script>
 </body></html>

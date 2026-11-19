@@ -135,7 +135,7 @@
                     </div>
                     <div class="cash-process-total"><span>Total tagihan</span><b>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</b></div>
                     <label class="cash-modal-field">Uang diterima dari pelanggan
-                        <span><b>Rp</b><input type="number" name="uang_diterima" min="{{ $order->total_harga }}" step="1" required data-total="{{ $order->total_harga }}" placeholder="Contoh: 50000"></span>
+                        <span><b>Rp</b><input type="number" name="uang_diterima" min="{{ $order->total_harga }}" step="1" required data-total="{{ $order->total_harga }}" placeholder="Contoh: 50000"></span><small class="cash-modal-error" aria-live="polite"></small>
                     </label>
                     <div class="cash-modal-change"><span>Kembalian</span><b data-change>Masukkan uang diterima</b></div>
                     <div class="cash-modal-actions"><button class="button button-light cash-modal-cancel" type="button">Batal</button><button class="button button-dark" type="submit">Uang sesuai · Proses pesanan</button></div>
@@ -246,6 +246,8 @@
                 input.addEventListener('input', () => {
                     const value = Number(input.value || 0) - Number(input.dataset.total || 0);
                     change.textContent = input.value ? (value >= 0 ? format(value) : `Kurang ${format(Math.abs(value))}`) : 'Masukkan uang diterima';
+                    const warning = dialog.querySelector('.cash-modal-error');
+                    warning.textContent = input.value && value < 0 ? `Uang tunai kurang ${format(Math.abs(value))} dari total tagihan.` : '';
                 });
             });
         })();

@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Simulator QRIS · Kuligo Resto</title>
     <link rel="stylesheet" href="/css/customer.css?v=qris-actions-2">
+    <link rel="stylesheet" href="{{ asset('css/app-notifications.css') }}?v=1">
     <style>
         .simulator-card{max-width:560px;margin:40px auto;padding:28px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;box-shadow:0 18px 48px #10182814}
         .simulator-card h1{margin:0 0 10px}.simulator-card p{color:#667085;line-height:1.6}.simulator-label{display:inline-block;margin-bottom:14px;padding:6px 10px;border-radius:999px;background:#fff4d6;color:#875d00;font-size:12px;font-weight:800;letter-spacing:.08em}
@@ -92,5 +93,6 @@
             });
         })();
     </script>
+<script src="{{ asset('js/app-notifications.js') }}" defer></script>
 </body>
 </html>

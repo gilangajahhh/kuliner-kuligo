@@ -1,0 +1,87 @@
+{
+  "info": {
+    "_postman_id": "03f054df-9254-4fa0-9b75-f0e214209871",
+    "name": "Kuligo - JSON Endpoints (Laravel Web)",
+    "description": "Dokumentasi endpoint JSON yang benar-benar terdaftar pada project Kuligo. Project saat ini memakai routes/web.php dan belum memiliki routes/api.php, sehingga endpoint POST tetap memakai session dan perlindungan CSRF Laravel. Untuk request POST, gunakan cookie session dari browser/login dan isi csrfToken. Endpoint kasir memerlukan login dengan role admin atau kasir. Response yang disimpan adalah contoh dokumentasi, bukan hasil server langsung.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000", "type": "string" },
+    { "key": "kodeMeja", "value": "meja-01", "type": "string" },
+    { "key": "idMenu", "value": "1", "type": "string" },
+    { "key": "idempotencyKey", "value": "6f3f6e94-4c4a-4c41-a286-6c9fc4e42311", "type": "string" },
+    { "key": "noPesanan", "value": "ORD-20261117-ABC123", "type": "string" },
+    { "key": "csrfToken", "value": "ISI_TOKEN_CSRF_DARI_SESSION_BROWSER", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Cek kesehatan aplikasi dan database",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/health" },
+          "response": [
+            { "name": "200 - aplikasi dan database siap", "originalRequest": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/health" }, "status": "OK", "code": 200, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"status\": \"ok\",\n  \"app\": \"Laravel\",\n  \"timestamp\": \"2026-11-17T10:00:00+07:00\",\n  \"checks\": {\n    \"database\": { \"status\": \"connected\", \"driver\": \"pgsql\", \"database\": \"postgres\" },\n    \"tabel_menu\": { \"status\": \"ok\", \"jumlah_menu\": 8 }\n  }\n}" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pelanggan",
+      "item": [
+        {
+          "name": "Cek stok menu",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/menu/{{kodeMeja}}/stok/{{idMenu}}" },
+          "response": [
+            { "name": "200 - stok ditemukan", "originalRequest": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/menu/{{kodeMeja}}/stok/{{idMenu}}" }, "status": "OK", "code": 200, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"stok\": 8,\n  \"tersedia\": true,\n  \"nama_menu\": \"Nasi goreng\"\n}" }
+          ]
+        },
+        {
+          "name": "Checkout pesanan",
+          "request": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }], "body": { "mode": "raw", "raw": "{\n  \"idempotency_key\": \"{{idempotencyKey}}\",\n  \"nama_pelanggan\": \"Budi\",\n  \"items\": [\n    {\n      \"id_menu\": {{idMenu}},\n      \"jumlah\": 2,\n      \"catatan\": \"Tidak pedas\"\n    }\n  ]\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/checkout" },
+          "response": [
+            { "name": "200 - pesanan berhasil dibuat", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"idempotency_key\":\"{{idempotencyKey}}\",\"nama_pelanggan\":\"Budi\",\"items\":[{\"id_menu\":{{idMenu}},\"jumlah\":2,\"catatan\":\"Tidak pedas\"}]}" }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/checkout" }, "status": "OK", "code": 200, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"no_pesanan\": \"ORD-20261117-ABC123\",\n  \"total_harga\": 30000,\n  \"redirect\": \"http://127.0.0.1:8000/menu/meja-01/bayar?no_pesanan=ORD-20261117-ABC123\"\n}" },
+            { "name": "422 - data tidak lolos validasi", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"items\":[]}" }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/checkout" }, "status": "Unprocessable Content", "code": 422, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"The idempotency key field is required. (and 1 more error)\",\n  \"errors\": {\n    \"idempotency_key\": [\"The idempotency key field is required.\"],\n    \"items\": [\"The items field is required.\"]\n  }\n}" },
+            { "name": "400 - body JSON tidak valid (contoh format umum)", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ invalid json" }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/checkout" }, "status": "Bad Request", "code": 400, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"Invalid JSON payload.\"\n}" }
+          ]
+        },
+        {
+          "name": "Pilih metode pembayaran",
+          "request": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }], "body": { "mode": "raw", "raw": "{\n  \"no_pesanan\": \"{{noPesanan}}\",\n  \"metode_pembayaran\": \"tunai\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/bayar" },
+          "response": [
+            { "name": "200 - tunai menunggu pembayaran di kasir", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"no_pesanan\":\"{{noPesanan}}\",\"metode_pembayaran\":\"tunai\"}" }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/bayar" }, "status": "OK", "code": 200, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"status\": \"pending\",\n  \"metode\": \"tunai\",\n  \"instructions\": null\n}" },
+            { "name": "422 - metode pembayaran tidak valid", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"no_pesanan\":\"{{noPesanan}}\",\"metode_pembayaran\":\"kartu\"}" }, "url": "{{baseUrl}}/menu/{{kodeMeja}}/bayar" }, "status": "Unprocessable Content", "code": 422, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"The selected metode pembayaran is invalid.\",\n  \"errors\": {\n    \"metode_pembayaran\": [\"The selected metode pembayaran is invalid.\"]\n  }\n}" },
+            { "name": "403 - contoh akses ditolak oleh middleware/hosting", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/menu/{{kodeMeja}}/bayar" }, "status": "Forbidden", "code": 403, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"Anda tidak punya akses ke halaman ini.\"\n}" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kasir (perlu login role admin/kasir)",
+      "item": [
+        {
+          "name": "Ambil status meja (JSON)",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/kasir/meja/status" },
+          "response": [
+            { "name": "200 - daftar meja dan pesanan aktif", "originalRequest": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/kasir/meja/status" }, "status": "OK", "code": 200, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "[\n  {\n    \"id_meja\": 1,\n    \"nomor_meja\": \"Meja 01\",\n    \"status_meja\": \"terisi\",\n    \"pesanan\": []\n  }\n]" },
+            { "name": "403 - role tidak diizinkan", "originalRequest": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{baseUrl}}/kasir/meja/status" }, "status": "Forbidden", "code": 403, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"Anda tidak punya akses ke halaman ini.\"\n}" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Midtrans Webhook",
+      "item": [
+        {
+          "name": "Terima notifikasi pembayaran Midtrans",
+          "request": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-CSRF-TOKEN", "value": "{{csrfToken}}" }], "body": { "mode": "raw", "raw": "{\n  \"order_id\": \"ORDER-ID-DARI-MIDTRANS\",\n  \"status_code\": \"200\",\n  \"gross_amount\": \"30000.00\",\n  \"signature_key\": \"SIGNATURE_DARI_MIDTRANS\",\n  \"transaction_status\": \"settlement\",\n  \"payment_type\": \"qris\",\n  \"currency\": \"IDR\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/midtrans/webhook" },
+          "response": [
+            { "name": "200 - notifikasi valid diterima", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"order_id\":\"ORDER-ID-DARI-MIDTRANS\",\"status_code\":\"200\",\"gross_amount\":\"30000.00\",\"signature_key\":\"SIGNATURE_DARI_MIDTRANS\",\"transaction_status\":\"settlement\",\"payment_type\":\"qris\",\"currency\":\"IDR\"}" }, "url": "{{baseUrl}}/midtrans/webhook" }, "status": "OK", "code": 200, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"status\": \"ok\"\n}" },
+            { "name": "400 - payload tidak lengkap", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/midtrans/webhook" }, "status": "Bad Request", "code": 400, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"Notifikasi Midtrans tidak lengkap.\"\n}" },
+            { "name": "422 - nominal tidak cocok", "originalRequest": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"order_id\":\"ORDER-ID-DARI-MIDTRANS\",\"status_code\":\"200\",\"gross_amount\":\"1.00\",\"signature_key\":\"SIGNATURE_VALID_TAPI_NOMINAL_SALAH\",\"transaction_status\":\"settlement\",\"payment_type\":\"qris\",\"currency\":\"IDR\"}" }, "url": "{{baseUrl}}/midtrans/webhook" }, "status": "Unprocessable Content", "code": 422, "_postman_previewlanguage": "json", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "{\n  \"message\": \"Nominal atau mata uang transaksi tidak cocok.\"\n}" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -108,11 +108,15 @@ class PesananController extends Controller
 
     public function tambahMeja(Request $request)
     {
-        $data = $request->validate(['nomor_meja' => 'required|string|max:50|unique:meja,nomor_meja']);
+        $data = $request->validate([
+            'nomor_meja' => 'required|string|max:50|unique:meja,nomor_meja',
+            'tipe_meja' => 'required|in:indoor,outdoor',
+            'kapasitas' => 'required|integer|min:1|max:50',
+        ]);
         $kode = Str::slug($data['nomor_meja']) ?: 'meja';
         $kodeQr = $kode;
         while (Meja::where('kode_qr', $kodeQr)->exists()) $kodeQr = $kode . '-' . Str::lower(Str::random(4));
-        Meja::create(['nomor_meja' => $data['nomor_meja'], 'kode_qr' => $kodeQr, 'status_meja' => 'kosong']);
+        Meja::create(['nomor_meja' => $data['nomor_meja'], 'kode_qr' => $kodeQr, 'status_meja' => 'kosong', 'tipe_meja' => $data['tipe_meja'], 'kapasitas' => $data['kapasitas']]);
         return redirect()->route('kasir.meja.index')->with('success', 'Meja berhasil ditambahkan.');
     }
 
@@ -120,16 +124,18 @@ class PesananController extends Controller
     {
         $data = $request->validate([
             'nomor_meja' => ['required', 'string', 'max:50', Rule::unique('meja', 'nomor_meja')->ignore($meja->getKey(), 'id_meja')],
+            'tipe_meja' => 'required|in:indoor,outdoor',
+            'kapasitas' => 'required|integer|min:1|max:50',
         ]);
-        $meja->update(['nomor_meja' => $data['nomor_meja']]);
+        $meja->update($data);
 
         return redirect()->route('kasir.meja.index')->with('success', 'Nama meja berhasil diperbarui.');
     }
 
     public function hapusMeja(Meja $meja)
     {
-        if ($meja->pesanan()->exists()) {
-            return back()->withErrors(['meja' => 'Meja memiliki riwayat pesanan dan tidak dapat dihapus.']);
+        if ($meja->pesanan()->exists() || $meja->reservasi()->exists()) {
+            return back()->withErrors(['meja' => 'Meja memiliki riwayat pesanan atau reservasi dan tidak dapat dihapus.']);
         }
         $meja->delete();
 

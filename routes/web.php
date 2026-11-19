@@ -8,6 +8,9 @@ use App\Http\Controllers\Admin\MejaController as AdminMeja;
 use App\Http\Controllers\Kasir\PesananController as KasirPesanan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ReservasiController;
+use App\Http\Controllers\Kasir\ReservasiController as KasirReservasi;
+use App\Http\Controllers\Kasir\LaporanController as KasirLaporan;
 
 Route::get('/health', [HealthController::class, 'index'])->name('health');
 Route::post('/xendit/webhook', [PelangganController::class, 'xenditWebhook'])->name('xendit.webhook');
@@ -39,6 +42,10 @@ Route::prefix('menu/{kode_qr}')->group(function () {
     Route::get('/status/{no_pesanan}', [PelangganController::class, 'status'])->name('menu.status');
 });
 Route::get('/menu', [PelangganController::class, 'menuAwal'])->name('menu.home');
+Route::redirect('/reservasi', '/reservasi-meja');
+Route::get('/reservasi-meja', [ReservasiController::class, 'index'])->name('reservasi.index');
+Route::post('/reservasi-meja', [ReservasiController::class, 'store'])->name('reservasi.store');
+Route::get('/reservasi/berhasil/{kode}', [ReservasiController::class, 'success'])->name('reservasi.success');
 
 /*
 |--------------------------------------------------------------------------
@@ -72,7 +79,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/staff', [\App\Http\Controllers\Admin\StaffController::class, 'store'])->name('staff.store');
     Route::patch('/staff/{user}', [\App\Http\Controllers\Admin\StaffController::class, 'update'])->name('staff.update');
     Route::delete('/staff/{user}', [\App\Http\Controllers\Admin\StaffController::class, 'destroy'])->name('staff.destroy');
-    Route::get('/laporan', [\App\Http\Controllers\Admin\LaporanController::class, 'index'])->name('laporan');
+    Route::get('/laporan', fn () => redirect()->route('kasir.laporan'))->name('laporan');
 });
 
 /*
@@ -84,6 +91,9 @@ Route::middleware(['auth', 'role:admin,kasir'])->prefix('kasir')->name('kasir.')
     Route::get('/dashboard', [KasirPesanan::class, 'index'])->name('dashboard');
     Route::get('/pesanan', [KasirPesanan::class, 'index'])->name('pesanan');
     Route::get('/transaksi', [KasirPesanan::class, 'transaksi'])->name('transaksi');
+    Route::get('/laporan', [KasirLaporan::class, 'index'])->name('laporan');
+    Route::get('/reservasi', [KasirReservasi::class, 'index'])->name('reservasi.index');
+    Route::patch('/reservasi/{reservasi}/status', [KasirReservasi::class, 'status'])->name('reservasi.status');
     Route::get('/meja/status', [KasirPesanan::class, 'statusMeja'])->name('meja.status');
     Route::get('/meja', [KasirPesanan::class, 'meja'])->name('meja.index');
     Route::post('/meja', [KasirPesanan::class, 'tambahMeja'])->name('meja.store');

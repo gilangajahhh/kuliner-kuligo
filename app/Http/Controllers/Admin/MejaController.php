@@ -12,7 +12,7 @@ class MejaController extends Controller
 {
     public function index()
     {
-        $meja = Meja::withCount('pesanan')->orderBy('nomor_meja')->get();
+        $meja = Meja::withCount(['pesanan', 'reservasi'])->orderBy('nomor_meja')->get();
 
         return view('admin.meja.index', compact('meja'));
     }
@@ -21,6 +21,8 @@ class MejaController extends Controller
     {
         $data = $request->validate([
             'nomor_meja' => 'required|string|max:50|unique:meja,nomor_meja',
+            'tipe_meja' => 'required|in:indoor,outdoor',
+            'kapasitas' => 'required|integer|min:1|max:50',
         ]);
 
         $kode = Str::slug($data['nomor_meja']) ?: 'meja';
@@ -33,6 +35,8 @@ class MejaController extends Controller
             'nomor_meja' => $data['nomor_meja'],
             'kode_qr' => $kodeQr,
             'status_meja' => 'kosong',
+            'tipe_meja' => $data['tipe_meja'],
+            'kapasitas' => $data['kapasitas'],
         ]);
 
         return redirect()->route('admin.meja.index')->with('success', 'Meja berhasil ditambahkan. QR siap dicetak.');
@@ -42,9 +46,11 @@ class MejaController extends Controller
     {
         $data = $request->validate([
             'nomor_meja' => ['required', 'string', 'max:50', Rule::unique('meja', 'nomor_meja')->ignore($meja->getKey(), 'id_meja')],
+            'tipe_meja' => 'required|in:indoor,outdoor',
+            'kapasitas' => 'required|integer|min:1|max:50',
         ]);
 
-        $meja->update(['nomor_meja' => $data['nomor_meja']]);
+        $meja->update($data);
 
         return redirect()->route('admin.meja.index')->with('success', 'Nama meja berhasil diperbarui. Kode QR tetap sama.');
     }
@@ -58,8 +64,8 @@ class MejaController extends Controller
 
     public function destroy(Meja $meja)
     {
-        if ($meja->pesanan()->exists()) {
-            return back()->withErrors(['meja' => 'Meja sudah memiliki riwayat pesanan, jadi tidak dapat dihapus agar data transaksi tetap aman.']);
+        if ($meja->pesanan()->exists() || $meja->reservasi()->exists()) {
+            return back()->withErrors(['meja' => 'Meja sudah memiliki riwayat pesanan atau reservasi, jadi tidak dapat dihapus agar data tetap aman.']);
         }
 
         $meja->delete();
