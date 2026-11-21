@@ -4,13 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${APP_PORT:-10000}:10000"
+      - "${APP_PORT:-6431}:6431"
     environment:
       APP_NAME: "${APP_NAME:-Kuligo Resto}"
       APP_ENV: "${APP_ENV:-local}"
       APP_DEBUG: "${APP_DEBUG:-true}"
       APP_KEY: "${APP_KEY:-}"
-      APP_URL: "${APP_URL:-http://localhost:10000}"
+      APP_URL: "${APP_URL:-http://localhost:6431}"
       LOG_CHANNEL: "${LOG_CHANNEL:-stack}"
       # Isi variabel DB_* di Coolify dari kredensial koneksi Supabase.
       DB_CONNECTION: pgsql
