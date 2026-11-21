@@ -12,38 +12,18 @@ services:
       APP_KEY: "${APP_KEY:-}"
       APP_URL: "${APP_URL:-http://localhost:10000}"
       LOG_CHANNEL: "${LOG_CHANNEL:-stack}"
+      # Isi variabel DB_* di Coolify dari kredensial koneksi Supabase.
       DB_CONNECTION: pgsql
-      DB_HOST: "${DB_HOST:-db}"
-      DB_PORT: "${DB_PORT:-5432}"
-      DB_DATABASE: "${DB_DATABASE:-kuligo}"
-      DB_USERNAME: "${DB_USERNAME:-kuligo}"
-      DB_PASSWORD: "${DB_PASSWORD:-kuligo}"
-      DB_SSLMODE: "${DB_SSLMODE:-prefer}"
+      DB_HOST: "${DB_HOST:?Isi DB_HOST dengan hostname Supabase di Coolify}"
+      DB_PORT: "${DB_PORT:?Isi DB_PORT sesuai koneksi Supabase di Coolify}"
+      DB_DATABASE: "${DB_DATABASE:?Isi DB_DATABASE di Coolify}"
+      DB_USERNAME: "${DB_USERNAME:?Isi DB_USERNAME di Coolify}"
+      DB_PASSWORD: "${DB_PASSWORD:?Isi DB_PASSWORD di Coolify}"
+      DB_SSLMODE: "${DB_SSLMODE:-require}"
       SESSION_DRIVER: "${SESSION_DRIVER:-file}"
       CACHE_STORE: "${CACHE_STORE:-file}"
       QUEUE_CONNECTION: "${QUEUE_CONNECTION:-sync}"
       MIDTRANS_SERVER_KEY: "${MIDTRANS_SERVER_KEY:-}"
       MIDTRANS_CLIENT_KEY: "${MIDTRANS_CLIENT_KEY:-}"
       MIDTRANS_IS_PRODUCTION: "${MIDTRANS_IS_PRODUCTION:-false}"
-    depends_on:
-      db:
-        condition: service_healthy
     restart: unless-stopped
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: "${DB_DATABASE:-kuligo}"
-      POSTGRES_USER: "${DB_USERNAME:-kuligo}"
-      POSTGRES_PASSWORD: "${DB_PASSWORD:-kuligo}"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
